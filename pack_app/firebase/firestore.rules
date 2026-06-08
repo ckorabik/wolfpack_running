@@ -1,0 +1,135 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function membership(teamId) {
+      return get(/databases/$(database)/documents/teams/$(teamId)/memberships/$(request.auth.uid));
+    }
+
+    function isMember(teamId) {
+      return signedIn() && exists(/databases/$(database)/documents/teams/$(teamId)/memberships/$(request.auth.uid));
+    }
+
+    function canReadTeam(teamId) {
+      return isMember(teamId)
+        || get(/databases/$(database)/documents/teams/$(teamId)).data.publicRead == true;
+    }
+
+    function role(teamId) {
+      return isMember(teamId) ? membership(teamId).data.role : "guest";
+    }
+
+    function isCoach(teamId) {
+      return role(teamId) in ["coach", "headCoach"];
+    }
+
+    function canMessage(teamId) {
+      return role(teamId) in ["athlete", "parent", "coach", "headCoach"];
+    }
+
+    function isHeadCoach(teamId) {
+      return role(teamId) == "headCoach";
+    }
+
+    function isAthleteOwner(teamId, athleteId) {
+      return isMember(teamId)
+        && exists(/databases/$(database)/documents/teams/$(teamId)/roster/$(athleteId))
+        && get(/databases/$(database)/documents/teams/$(teamId)/roster/$(athleteId)).data.userId == request.auth.uid;
+    }
+
+    function teamReadPasswordOk(teamId) {
+      return resource.data.publicRead == true;
+    }
+
+    match /users/{userId} {
+      allow read, update: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /teams/{teamId} {
+      allow read: if resource.data.publicRead == true || isMember(teamId);
+      allow create: if false;
+      allow update: if isHeadCoach(teamId);
+      allow delete: if false;
+
+      match /memberships/{userId} {
+        allow read: if signedIn() && (request.auth.uid == userId || isCoach(teamId));
+        allow create, update, delete: if isHeadCoach(teamId);
+      }
+
+      match /branding/current {
+        allow read: if canReadTeam(teamId);
+        allow create, update: if isCoach(teamId);
+        allow delete: if isHeadCoach(teamId);
+      }
+
+      match /featureFlags/current {
+        allow read: if canReadTeam(teamId);
+        allow create, update, delete: if isHeadCoach(teamId);
+      }
+
+      match /announcements/{announcementId} {
+        allow read: if canReadTeam(teamId);
+        allow create, update, delete: if isCoach(teamId);
+      }
+
+      match /workouts/{workoutId} {
+        allow read: if canReadTeam(teamId);
+        allow create, update, delete: if isCoach(teamId);
+      }
+
+      match /events/{eventId} {
+        allow read: if canReadTeam(teamId);
+        allow create, update, delete: if isCoach(teamId);
+      }
+
+      match /resources/{resourceId} {
+        allow read: if canReadTeam(teamId);
+        allow create, update, delete: if isCoach(teamId);
+      }
+
+      match /records/{recordId} {
+        allow read: if canReadTeam(teamId);
+        allow create, update, delete: if isHeadCoach(teamId);
+      }
+
+      match /history/{historyId} {
+        allow read: if canReadTeam(teamId);
+        allow create, update, delete: if isHeadCoach(teamId);
+      }
+
+      match /roster/{athleteId} {
+        allow read: if canReadTeam(teamId);
+        allow create, delete: if isCoach(teamId);
+        allow update: if isCoach(teamId)
+          && (
+            isHeadCoach(teamId)
+            || !request.resource.data.diff(resource.data).affectedKeys().hasAny(["level"])
+          );
+
+        match /profile/private {
+          allow read, update: if isAthleteOwner(teamId, athleteId) || isCoach(teamId);
+          allow create: if isAthleteOwner(teamId, athleteId) || isCoach(teamId);
+          allow delete: if isHeadCoach(teamId);
+        }
+      }
+
+      match /channels/{channelId} {
+        allow read: if canReadTeam(teamId);
+        allow create, update, delete: if isCoach(teamId);
+
+        match /messages/{messageId} {
+          allow read: if canReadTeam(teamId);
+          allow create: if canMessage(teamId)
+            && request.resource.data.userId == request.auth.uid;
+          allow update, delete: if isCoach(teamId);
+        }
+      }
+    }
+  }
+}

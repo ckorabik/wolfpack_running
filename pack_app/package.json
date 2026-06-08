@@ -1,0 +1,22 @@
+{
+  "name": "pack-team-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "firebase:emulators": "firebase emulators:start",
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules,storage",
+    "firebase:deploy:indexes": "firebase deploy --only firestore:indexes",
+    "firebase:deploy:functions": "firebase deploy --only functions",
+    "firebase:deploy:hosting": "firebase deploy --only hosting",
+    "seed:firestore": "node scripts/seedFirestore.example.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "firebase": "^11.0.0",
+    "firebase-admin": "^13.0.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "^14.0.0"
+  }
+}
