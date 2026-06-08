@@ -1,0 +1,35 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function membershipPath(teamId) {
+      return /databases/(default)/documents/teams/$(teamId)/memberships/$(request.auth.uid);
+    }
+
+    function isMember(teamId) {
+      return signedIn() && firestore.exists(membershipPath(teamId));
+    }
+
+    function role(teamId) {
+      return firestore.get(membershipPath(teamId)).data.role;
+    }
+
+    function isCoach(teamId) {
+      return isMember(teamId) && role(teamId) in ["coach", "headCoach"];
+    }
+
+    match /teams/{teamId}/branding/{fileName} {
+      allow read: if isMember(teamId);
+      allow write: if isCoach(teamId);
+    }
+
+    match /teams/{teamId}/athletes/{athleteId}/{fileName} {
+      allow read: if isMember(teamId);
+      allow write: if isMember(teamId);
+    }
+  }
+}

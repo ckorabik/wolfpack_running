@@ -2,88 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Cross Country Team Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>XC Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
   <script defer src="app.js"></script>
 </head>
+
 <body>
+<header class="site-header">
+  <h1>Cross Country Dashboard</h1>
+  <p>Team overview & quick links</p>
+</header>
 
-  <!-- HEADER -->
-  <header class="site-header">
-    <h1>Cross Country Team Dashboard</h1>
-    <p>Season stats • Mileage log • Team progress</p>
-  </header>
+<nav class="top-nav">
+  <a href="index.html" class="nav-link-button active-link">Dashboard</a>
+  <a href="history.html" class="nav-link-button">History</a>
+  <a href="records.html" class="nav-link-button">Records</a>
+  <a href="schedule.html" class="nav-link-button">Schedule</a>
+  <a href="calendar.html" class="nav-link-button">Calendar</a>
+  <a href="mileage.html" class="nav-link-button">Mileage Reports</a>
+  <a href="pr.html" class="nav-link-button">Team PRs</a>
+  <a href="core.html" class="nav-link-button">Core & Mobility</a>
+  <a href="documents.html" class="nav-link-button">Documents</a>
+  <a href="map.html" class="nav-link-button">Trail Map</a>
+  <a href="blog.html" class="nav-link-button">Blog</a>
+</nav>
 
-  <!-- NAV -->
-  <nav class="top-nav">
-    <button id="tab-stats" class="nav-button active">Season Stats</button>
-    <button id="tab-mileage" class="nav-button">Mileage Log</button>
-  </nav>
+<main>
+  <section class="view-section">
+    <h2 class="section-title">Welcome</h2>
+    <p class="section-description">
+      Select a page from the navigation bar to explore team information.
+    </p>
+  </section>
+</main>
 
-  <!-- MAIN CONTENT -->
-  <main>
-    <!-- Season Stats -->
-    <section id="section-stats" class="view-section">
-      <h2 class="section-title">Season Stats</h2>
-      <p class="section-description">
-        Overview of athlete stats for the current season.
-      </p>
-
-      <table id="stats-table" class="themed-table">
-        <thead>
-          <tr>
-            <th>Athlete</th>
-            <th>Grade</th>
-            <th>Total Miles</th>
-            <th>5K PR</th>
-            <th>Notes</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <!-- Mileage Log -->
-    <section id="section-mileage" class="view-section hidden">
-      <h2 class="section-title">Mileage Log</h2>
-      <p class="section-description">
-        Log daily mileage for you or your athletes.
-      </p>
-
-      <form id="mileage-form" class="card">
-        <div class="form-row">
-          <label for="log-date">Date</label>
-          <input type="date" id="log-date" required />
-        </div>
-
-        <div class="form-row">
-          <label for="log-name">Athlete Name</label>
-          <input type="text" id="log-name" placeholder="e.g. Chris K." required />
-        </div>
-
-        <div class="form-row">
-          <label for="log-miles">Miles</label>
-          <input type="number" id="log-miles" min="0" step="0.1" required />
-        </div>
-
-        <div class="form-row">
-          <label for="log-notes">Notes</label>
-          <textarea id="log-notes" rows="2" placeholder="Workout details, how it felt, etc."></textarea>
-        </div>
-
-        <button type="submit" class="primary-button">Add Entry</button>
-      </form>
-
-      <h3 class="section-subtitle">Logged Mileage</h3>
-      <ul id="mileage-list" class="mileage-list"></ul>
-    </section>
-  </main>
-
-  <!-- FOOTER -->
-  <footer class="site-footer">
-    <small>&copy; <span id="year"></span> Cross Country</small>
-  </footer>
-
+<footer class="site-footer">
+  <small>&copy; <span id="year"></span> Cross Country</small>
+</footer>
 </body>
 </html>
