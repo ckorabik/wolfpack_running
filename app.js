@@ -420,6 +420,7 @@ function saveFeatureFlags() {
 }
 
 function populateTeamSelect() {
+  if (!teamSelect) return;
   teamSelect.innerHTML = Object.values(tenantCatalog)
     .map((tenant) => `<option value="${tenant.id}">${tenant.name}</option>`)
     .join("");
@@ -447,7 +448,9 @@ function setActiveTeam(teamId, options = {}) {
     activeChannel: data.channels[0]?.id || "all",
     workoutFilter: "all"
   });
-  teamSelect.value = state.teamId;
+  if (teamSelect) {
+    teamSelect.value = state.teamId;
+  }
   applyBranding();
   renderAll();
   applyFeatureFlags();
@@ -970,7 +973,7 @@ document.querySelectorAll("[data-workout-filter]").forEach((button) => {
 
 roleSelect.addEventListener("change", (event) => setRole(event.target.value));
 
-teamSelect.addEventListener("change", (event) => {
+teamSelect?.addEventListener("change", (event) => {
   setActiveTeam(event.target.value);
   setAuthTab("readonly");
 });

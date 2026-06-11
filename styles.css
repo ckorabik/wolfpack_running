@@ -266,7 +266,6 @@ button {
 }
 
 .role-panel label,
-.tenant-picker,
 .auth-form label,
 .settings-form label,
 .dialog-card label {
@@ -279,10 +278,6 @@ button {
 
 .role-panel label {
   color: rgba(255, 255, 255, 0.72);
-}
-
-.tenant-picker {
-  color: var(--muted);
 }
 
 .session-note {
