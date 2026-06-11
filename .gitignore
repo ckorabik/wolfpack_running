@@ -7,3 +7,4 @@ firestore-debug.log
 ui-debug.log
 scripts/serviceAccountKey.json
 src/firebase/firebaseConfig.js
+*firebase-adminsdk*.json

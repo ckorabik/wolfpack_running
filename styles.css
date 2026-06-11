@@ -118,6 +118,45 @@ button {
   display: grid;
 }
 
+.auth-copy {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.auth-copy strong {
+  font-size: 0.95rem;
+}
+
+.auth-copy span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.onboarding-grid,
+.color-row {
+  display: grid;
+  gap: 12px;
+}
+
+.onboarding-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.color-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.color-row input[type="color"] {
+  width: 100%;
+  min-height: 42px;
+  padding: 4px;
+}
+
 .auth-error {
   display: none;
   margin: 0;
@@ -989,6 +1028,8 @@ dialog::backdrop {
   }
 
   .auth-tabs,
+  .onboarding-grid,
+  .color-row,
   .card-grid,
   .resource-grid,
   .level-grid,

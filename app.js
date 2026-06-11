@@ -226,6 +226,7 @@ const pageTitles = {
 };
 
 const roleCapabilities = {
+  viewer: [],
   athlete: ["message", "editOwnProfile"],
   parent: ["message"],
   coach: ["message", "coachStudio", "manageFeatures", "manageAnnouncements", "manageWorkouts", "manageSchedule", "manageResources", "manageRoster", "manageBranding"],
@@ -292,8 +293,92 @@ function cloneTeamData(source) {
   });
 }
 
+function emptyTeamData(coachName = "Head Coach") {
+  return {
+    announcements: [
+      {
+        title: "Welcome to your team hub",
+        body: "Use Coach Studio to tune your branding, roster, records, and communication tools.",
+        author: coachName,
+        time: "Just now"
+      }
+    ],
+    workouts: [],
+    events: [],
+    resources: [],
+    records: [],
+    history: [],
+    roster: [],
+    channels: [
+      {
+        id: "all",
+        name: "All Team",
+        audience: "Coaches, athletes, and parents",
+        messages: []
+      },
+      {
+        id: "parents",
+        name: "Parents",
+        audience: "Family logistics",
+        messages: []
+      },
+      {
+        id: "captains",
+        name: "Captains",
+        audience: "Team leaders and coaches",
+        messages: []
+      }
+    ]
+  };
+}
+
 function currentTenant() {
   return tenantCatalog[state.teamId] || tenantCatalog.wolfpack;
+}
+
+function firebaseBackend() {
+  return window.firebaseBackend || null;
+}
+
+function setFormBusy(form, isBusy, label = "Working...") {
+  const button = form.querySelector("button[type='submit']");
+  if (!button) return;
+  if (isBusy) {
+    button.dataset.originalText = button.textContent;
+    button.textContent = label;
+    button.disabled = true;
+    return;
+  }
+  button.textContent = button.dataset.originalText || button.textContent;
+  button.disabled = false;
+}
+
+function registerTenant(team, coachName = "Head Coach") {
+  tenantCatalog[team.id] = {
+    id: team.id,
+    name: team.name,
+    sport: team.sport || "Track and Field",
+    logoText: team.logoText || team.branding?.logoText || "TEAM",
+    accessPassword: "",
+    features: {
+      workouts: true,
+      schedule: true,
+      messages: true,
+      resources: true,
+      roster: true,
+      records: true,
+      coachStudio: true,
+      ...(team.features || {})
+    },
+    branding: {
+      ...brandingDefaults,
+      teamName: team.name,
+      logoText: team.logoText || team.branding?.logoText || "TEAM",
+      ...(team.branding || {})
+    }
+  };
+  tenantDataDefaults[team.id] = emptyTeamData(coachName);
+  populateTeamSelect();
 }
 
 function usersStorageKey() {
@@ -894,57 +979,161 @@ document.querySelectorAll("[data-auth-tab]").forEach((button) => {
   button.addEventListener("click", () => setAuthTab(button.dataset.authTab));
 });
 
-readonlyForm.addEventListener("submit", (event) => {
+readonlyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = document.querySelector("#teamPasswordInput").value;
-  if (password !== currentTenant().accessPassword) {
-    showAuthError("That team password did not match.");
-    return;
-  }
+  const backend = firebaseBackend();
+  setFormBusy(readonlyForm, true, "Opening...");
 
-  readonlyForm.reset();
-  clearAuthError();
-  unlockApp({ mode: "readonly", name: "Read-only guest", role: "athlete", teamId: state.teamId });
+  try {
+    if (backend) {
+      await backend.signInGuest();
+      await backend.joinTeamWithReadOnlyCode(state.teamId, password);
+    } else if (password !== currentTenant().accessPassword) {
+      showAuthError("That team password did not match.");
+      return;
+    }
+
+    readonlyForm.reset();
+    clearAuthError();
+    unlockApp({ mode: "readonly", name: "Read-only guest", role: "viewer", teamId: state.teamId });
+  } catch (error) {
+    showAuthError(error.message || "That team password did not match.");
+  } finally {
+    setFormBusy(readonlyForm, false);
+  }
 });
 
-loginForm.addEventListener("submit", (event) => {
+loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const email = document.querySelector("#loginEmailInput").value.trim().toLowerCase();
   const password = document.querySelector("#loginPasswordInput").value;
-  const user = getUsers().find((item) => item.email === email && item.password === password);
+  const backend = firebaseBackend();
+  setFormBusy(loginForm, true, "Signing in...");
 
-  if (!user) {
-    showAuthError("No account matched that email and password.");
-    return;
+  try {
+    if (backend) {
+      const firebaseUser = await backend.signIn(email, password);
+      const membership = await backend.getMembership(state.teamId, firebaseUser.uid);
+      if (!membership) {
+        showAuthError("That account is not connected to this team workspace yet.");
+        return;
+      }
+
+      loginForm.reset();
+      clearAuthError();
+      unlockApp({
+        mode: "user",
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || firebaseUser.email,
+        email: firebaseUser.email,
+        role: membership.role,
+        teamId: state.teamId
+      });
+      return;
+    }
+
+    const user = getUsers().find((item) => item.email === email && item.password === password);
+    if (!user) {
+      showAuthError("No account matched that email and password.");
+      return;
+    }
+
+    loginForm.reset();
+    clearAuthError();
+    unlockApp({ mode: "user", name: user.name, email: user.email, role: user.role, teamId: state.teamId });
+  } catch (error) {
+    showAuthError(error.message || "No account matched that email and password.");
+  } finally {
+    setFormBusy(loginForm, false);
   }
-
-  loginForm.reset();
-  clearAuthError();
-  unlockApp({ mode: "user", name: user.name, email: user.email, role: user.role, teamId: state.teamId });
 });
 
-signupForm.addEventListener("submit", (event) => {
+signupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = document.querySelector("#signupNameInput").value.trim();
   const email = document.querySelector("#signupEmailInput").value.trim().toLowerCase();
   const password = document.querySelector("#signupPasswordInput").value;
-  const role = document.querySelector("#signupRoleInput").value;
-  const users = getUsers();
+  const teamName = document.querySelector("#signupTeamNameInput").value.trim();
+  const sport = document.querySelector("#signupSportInput").value.trim();
+  const logoText = document.querySelector("#signupLogoTextInput").value.trim();
+  const accessCode = document.querySelector("#signupAccessCodeInput").value;
+  const branding = {
+    primary: document.querySelector("#signupPrimaryInput").value,
+    accent: document.querySelector("#signupAccentInput").value,
+    surface: document.querySelector("#signupSurfaceInput").value
+  };
+  const backend = firebaseBackend();
+  setFormBusy(signupForm, true, "Creating team...");
 
-  if (users.some((user) => user.email === email)) {
-    showAuthError("An account already exists for that email.");
-    return;
+  try {
+    if (backend) {
+      const firebaseUser = await backend.signUp({ email, password, name });
+      const setup = await backend.createTeamForCoach({
+        teamName,
+        sport,
+        logoText,
+        accessCode,
+        branding
+      });
+
+      registerTenant(setup.team, name);
+      signupForm.reset();
+      clearAuthError();
+      setActiveTeam(setup.teamId, { keepAuth: true });
+      unlockApp({
+        mode: "user",
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || name,
+        email: firebaseUser.email || email,
+        role: "headCoach",
+        teamId: setup.teamId
+      });
+      setView("coach");
+      return;
+    }
+
+    const fallbackId = teamName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 42);
+    const teamId = fallbackId || `team-${Date.now()}`;
+    registerTenant({
+      id: teamId,
+      name: teamName,
+      sport,
+      logoText,
+      branding: {
+        ...branding,
+        teamName,
+        logoText
+      }
+    }, name);
+    tenantCatalog[teamId].accessPassword = accessCode;
+    setActiveTeam(teamId, { keepAuth: true });
+    const users = getUsers();
+    if (users.some((user) => user.email === email)) {
+      showAuthError("An account already exists for that email.");
+      return;
+    }
+
+    const user = { name, email, password, role: "headCoach" };
+    users.push(user);
+    saveUsers(users);
+    signupForm.reset();
+    clearAuthError();
+    unlockApp({ mode: "user", name: user.name, email: user.email, role: user.role, teamId });
+    setView("coach");
+  } catch (error) {
+    showAuthError(error.message || "Could not create that team yet. Please try again.");
+  } finally {
+    setFormBusy(signupForm, false);
   }
-
-  const user = { name, email, password, role };
-  users.push(user);
-  saveUsers(users);
-  signupForm.reset();
-  clearAuthError();
-  unlockApp({ mode: "user", name: user.name, email: user.email, role: user.role, teamId: state.teamId });
 });
 
-logoutButton.addEventListener("click", () => {
+logoutButton.addEventListener("click", async () => {
+  try {
+    await firebaseBackend()?.signOutCurrentUser();
+  } catch (error) {
+    console.warn("Firebase sign out failed", error);
+  }
   lockApp();
   setAuthTab("readonly");
 });
