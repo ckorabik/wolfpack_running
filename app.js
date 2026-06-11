@@ -1068,7 +1068,7 @@ signupForm.addEventListener("submit", async (event) => {
 
   try {
     if (backend) {
-      const createAccount = backend.signUp || backend.signup;
+      const createAccount = backend.signUp || backend.signup || backend.Signup;
       if (!createAccount) {
         throw new Error("Firebase signup is not available. Refresh the page and try again.");
       }

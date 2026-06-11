@@ -23,6 +23,7 @@ globalThis.firebaseBackend = {
   signIn,
   signInGuest,
   signOutCurrentUser,
+  Signup: signUp,
   signup: signUp,
   signUp
 };
