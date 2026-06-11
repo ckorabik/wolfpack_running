@@ -3,11 +3,19 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      ".firebaserc",
       "**/.*",
+      ".git/**",
+      "**/.git/**",
       "**/node_modules/**",
+      "functions/**",
       "firebase/**",
       "scripts/**",
-      "docs/**"
+      "docs/**",
+      "*firebase-adminsdk*.json",
+      "scripts/serviceAccountKey.json",
+      "package*.json",
+      "*.log"
     ]
   },
   "firestore": {
