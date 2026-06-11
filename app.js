@@ -22,7 +22,7 @@ const state = {
     },
     {
       title: "Recovery reminder",
-      body: "Sleep, hydration, and a real dinner matter this week. Championship training starts with boring basics.",
+      body: "Prioritize sleep, hydration, and a balanced dinner during meet week.",
       author: "Coach Malik",
       time: "Monday"
     }
@@ -101,7 +101,7 @@ const state = {
     { year: "2022", title: "First combined conference title", body: "Boys and girls varsity teams both finished first at the conference championship." }
   ],
   roster: [
-    { name: "Maya Patel", group: "Distance", grade: "12", level: "Varsity", bio: "Steady miler, captain, and cooldown playlist defender.", goal: "Break 5:05 in the 1600m", color: "#1e6b52" },
+    { name: "Maya Patel", group: "Distance", grade: "12", level: "Varsity", bio: "Varsity distance runner and team captain.", goal: "Break 5:05 in the 1600m", color: "#1e6b52" },
     { name: "Andre Bell", group: "Sprints", grade: "11", level: "Varsity", bio: "Explosive starter focused on the 100m and 4x100 relay.", goal: "Own the final 30 meters", color: "#b3261e" },
     { name: "Jade Coleman", group: "Jumps", grade: "12", level: "Junior Varsity", bio: "Long jumper building consistency through the board.", goal: "Hit 19 feet again at sectionals", color: "#6b4ee6" },
     { name: "Theo Chen", group: "Throws", grade: "10", level: "Freshman", bio: "Shot and discus thrower learning the rhythm of big meets.", goal: "Add five feet before conference", color: "#8a5a22" }
@@ -159,71 +159,49 @@ const tenantCatalog = {
       surface: "#f7f4ee",
       heroImage: ""
     }
-  },
-  riverhawks: {
-    id: "riverhawks",
-    name: "Riverhawks XC",
-    sport: "Cross Country",
-    logoText: "RHXC",
-    accessPassword: "Riverhawks2026",
-    features: {
-      workouts: true,
-      schedule: true,
-      messages: true,
-      resources: true,
-      roster: true,
-      records: false,
-      coachStudio: true
-    },
-    branding: {
-      teamName: "Riverhawks XC",
-      logoText: "RHXC",
-      primary: "#005f73",
-      accent: "#9b5de5",
-      surface: "#f4f7f8",
-      heroImage: ""
-    }
   }
 };
 
 const tenantDataDefaults = {
-  wolfpack: cloneTeamData(state),
-  riverhawks: {
-    announcements: [
-      { title: "Morning run moved", body: "Tuesday practice starts at the north trailhead instead of the track.", author: "Coach Lee", time: "7:30 AM" },
-      { title: "Invite entries posted", body: "Varsity entries are final. JV alternates should bring spikes and trainers.", author: "Coach Adams", time: "Yesterday" }
-    ],
-    workouts: [
-      { group: "distance", title: "Hill progression", focus: "Strength over rolling terrain", details: ["15 min warmup", "8 hill reps", "Easy cooldown"], coach: "Coach Lee" },
-      { group: "distance", title: "Race rhythm", focus: "Controlled 1k repeats", details: ["5 x 1k", "2 min jog", "Strides"], coach: "Coach Adams" }
-    ],
-    events: [
-      { date: "2026-06-08", time: "7:00", title: "Trail practice", detail: "Meet at north trailhead with flats and water.", type: "Practice" },
-      { date: "2026-06-11", time: "5:30", title: "Team dinner", detail: "Captains host at the cafeteria patio.", type: "Team" }
-    ],
-    resources: [
-      { title: "XC packing list", kind: "Checklist", body: "Flats, spikes, water, dry socks, warmups, and recovery snack." },
-      { title: "Trail maps", kind: "Map", body: "Common routes for summer practices and captains runs." }
-    ],
-    records: [],
-    history: [
-      { year: "2025", title: "State meet return", body: "The Riverhawks qualified a full varsity squad for state." }
-    ],
-    roster: [
-      { name: "Nora Klein", group: "Distance", grade: "12", level: "Varsity", bio: "Front runner and captain.", goal: "Sub-18 5k", color: "#005f73" },
-      { name: "Sam Ortiz", group: "Distance", grade: "10", level: "Junior Varsity", bio: "Pack runner building closing speed.", goal: "Break 18:30", color: "#9b5de5" }
-    ],
-    channels: [
-      { id: "all", name: "All Team", audience: "Coaches, athletes, and parents", messages: [{ from: "Coach Lee", body: "Hydrate before the heat wave this week.", time: "9:20 AM" }] },
-      { id: "parents", name: "Parents", audience: "Family logistics", messages: [{ from: "Booster Club", body: "Bus snack donations are open for Saturday.", time: "Monday" }] },
-      { id: "captains", name: "Captains", audience: "Team leaders and coaches", messages: [{ from: "Coach Adams", body: "Please lead dynamic drills tomorrow.", time: "Yesterday" }] }
-    ]
-  }
+  wolfpack: cloneTeamData(state)
 };
 
 const sessionStorageKey = "packSession";
 const legacyUsersStorageKey = "packUsers";
 const legacyBrandingStorageKey = "packBranding";
+
+const featureCatalog = [
+  {
+    key: "workouts",
+    name: "Workout Hub",
+    description: "Publish training plans by event group."
+  },
+  {
+    key: "schedule",
+    name: "Scheduler",
+    description: "Share practices, meets, meetings, and team jobs."
+  },
+  {
+    key: "messages",
+    name: "Messages",
+    description: "Keep team channels and announcements available."
+  },
+  {
+    key: "resources",
+    name: "Resources",
+    description: "Collect forms, packing lists, links, and team files."
+  },
+  {
+    key: "roster",
+    name: "Roster",
+    description: "Show athlete profiles grouped by level."
+  },
+  {
+    key: "records",
+    name: "Records and History",
+    description: "Display school records and program milestones."
+  }
+];
 
 const brandingDefaults = {
   teamName: "PACK Team Hub",
@@ -243,18 +221,21 @@ const pageTitles = {
   roster: "Roster",
   athlete: "Athlete Page",
   records: "Records and History",
-  coach: "Coach Studio"
+  coach: "Coach Studio",
+  coachTools: "Coach Tools"
 };
 
 const roleCapabilities = {
   athlete: ["message", "editOwnProfile"],
   parent: ["message"],
-  coach: ["message", "coachStudio", "manageAnnouncements", "manageWorkouts", "manageSchedule", "manageResources", "manageRoster", "manageBranding"],
-  headCoach: ["message", "coachStudio", "manageAnnouncements", "manageWorkouts", "manageSchedule", "manageResources", "manageRoster", "manageBranding", "manageRecords", "assignLevels"]
+  coach: ["message", "coachStudio", "manageFeatures", "manageAnnouncements", "manageWorkouts", "manageSchedule", "manageResources", "manageRoster", "manageBranding"],
+  headCoach: ["message", "coachStudio", "manageFeatures", "manageAnnouncements", "manageWorkouts", "manageSchedule", "manageResources", "manageRoster", "manageBranding", "manageRecords", "assignLevels"]
 };
 
 const roleSelect = document.querySelector("#roleSelect");
 const teamSelect = document.querySelector("#teamSelect");
+const sidebar = document.querySelector(".sidebar");
+const mobileMenuButton = document.querySelector("#mobileMenuButton");
 const appShell = document.querySelector("#appShell");
 const authScreen = document.querySelector("#authScreen");
 const authError = document.querySelector("#authError");
@@ -283,6 +264,7 @@ const recordList = document.querySelector("#recordList");
 const historyList = document.querySelector("#historyList");
 const rosterForm = document.querySelector("#rosterForm");
 const rosterList = document.querySelector("#rosterList");
+const toolCatalog = document.querySelector("#toolCatalog");
 const channelList = document.querySelector("#channelList");
 const chatLog = document.querySelector("#chatLog");
 const activeChannelName = document.querySelector("#activeChannelName");
@@ -322,6 +304,10 @@ function brandingStorageKey() {
   return `packBranding:${state.teamId}`;
 }
 
+function featuresStorageKey() {
+  return `packFeatures:${state.teamId}`;
+}
+
 function teamDataStorageKey() {
   return `packTeamData:${state.teamId}`;
 }
@@ -336,6 +322,18 @@ function persistTeamData() {
   localStorage.setItem(teamDataStorageKey(), JSON.stringify(cloneTeamData(state)));
 }
 
+function loadFeatureFlags(teamId) {
+  const saved = localStorage.getItem(`packFeatures:${teamId}`);
+  return {
+    ...tenantCatalog[teamId].features,
+    ...(saved ? JSON.parse(saved) : {})
+  };
+}
+
+function saveFeatureFlags() {
+  localStorage.setItem(featuresStorageKey(), JSON.stringify(state.features));
+}
+
 function populateTeamSelect() {
   teamSelect.innerHTML = Object.values(tenantCatalog)
     .map((tenant) => `<option value="${tenant.id}">${tenant.name}</option>`)
@@ -344,7 +342,7 @@ function populateTeamSelect() {
 }
 
 function applyFeatureFlags() {
-  const features = currentTenant().features;
+  const features = state.features;
   document.querySelectorAll("[data-feature]").forEach((node) => {
     const enabled = features[node.dataset.feature] !== false;
     node.classList.toggle("hidden", !enabled);
@@ -357,7 +355,7 @@ function applyFeatureFlags() {
 
 function setActiveTeam(teamId, options = {}) {
   state.teamId = tenantCatalog[teamId] ? teamId : "wolfpack";
-  state.features = currentTenant().features;
+  state.features = loadFeatureFlags(state.teamId);
   const data = loadTeamData(state.teamId);
   Object.assign(state, data, {
     activeAthleteIndex: 0,
@@ -564,10 +562,10 @@ function setRole(role) {
 }
 
 function setView(view) {
-  if (view === "coach" && !isCoachRole()) {
+  if ((view === "coach" || view === "coachTools") && !isCoachRole()) {
     view = "home";
   }
-  if (currentTenant().features[view] === false) {
+  if (state.features[view] === false) {
     view = "home";
   }
 
@@ -580,6 +578,17 @@ function setView(view) {
   });
   document.querySelector("[data-page-title]").textContent = pageTitles[view];
   history.replaceState(null, "", `#${view}`);
+  closeMobileMenu();
+}
+
+function closeMobileMenu() {
+  sidebar.classList.remove("menu-open");
+  mobileMenuButton.setAttribute("aria-expanded", "false");
+}
+
+function toggleMobileMenu() {
+  const isOpen = sidebar.classList.toggle("menu-open");
+  mobileMenuButton.setAttribute("aria-expanded", String(isOpen));
 }
 
 function renderAnnouncements() {
@@ -780,7 +789,7 @@ function renderAthletePage() {
   athletePageEvent.textContent = athlete.group;
   athletePageBio.textContent = athlete.bio || "This athlete has not customized their page yet.";
   athletePageGrade.textContent = `Grade ${athlete.grade}`;
-  athletePageGoal.textContent = athlete.goal || "Season goal coming soon";
+  athletePageGoal.textContent = athlete.goal || "No season goal listed";
   athleteHero.style.borderColor = athlete.color || "var(--accent)";
   athleteHero.style.boxShadow = `inset 6px 0 0 ${athlete.color || "var(--accent)"}`;
   athleteProfileForm.classList.toggle("hidden", !canEdit);
@@ -816,6 +825,30 @@ function renderChannels() {
     .join("");
 }
 
+function renderToolCatalog() {
+  toolCatalog.innerHTML = featureCatalog
+    .map((tool) => {
+      const enabled = state.features[tool.key] !== false;
+      const headCoachOnly = tool.key === "records";
+      const locked = headCoachOnly && !isHeadCoach();
+      return `
+        <article class="tool-card ${enabled ? "enabled" : ""}">
+          <div>
+            <span class="tag">${enabled ? "Enabled" : "Disabled"}</span>
+            <h3>${tool.name}</h3>
+            <p>${tool.description}</p>
+            ${headCoachOnly ? `<small class="meta">Head coach approval required</small>` : ""}
+          </div>
+          <label class="switch-control">
+            <input type="checkbox" data-tool-toggle="${tool.key}" ${enabled ? "checked" : ""} ${locked ? "disabled" : ""}>
+            <span>${enabled ? "On" : "Off"}</span>
+          </label>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function renderAll() {
   todayDate.textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
   renderAnnouncements();
@@ -827,15 +860,18 @@ function renderAll() {
   renderRoster();
   renderAthletePage();
   renderChannels();
+  renderToolCatalog();
 }
 
 document.querySelectorAll("[data-view-link]").forEach((button) => {
   button.addEventListener("click", () => {
     const nextView = button.dataset.viewLink;
-    if (nextView === "coach" && !isCoachRole()) return;
+    if ((nextView === "coach" || nextView === "coachTools") && !isCoachRole()) return;
     setView(nextView);
   });
 });
+
+mobileMenuButton.addEventListener("click", toggleMobileMenu);
 
 document.querySelectorAll("[data-workout-filter]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -998,7 +1034,7 @@ document.querySelector("[data-add-workout]").addEventListener("click", () => {
   state.workouts.unshift({
     group: "sprints",
     title: "Starts + rhythm",
-    focus: "Coach-created session",
+    focus: "Coach session",
     details: ["Warmup", "Main set", "Cooldown"],
     coach: "Coach"
   });
@@ -1066,8 +1102,8 @@ rosterForm.addEventListener("submit", (event) => {
     group,
     grade: "9",
     level,
-    bio: "New athlete profile ready to customize.",
-    goal: "Set a season goal",
+    bio: "",
+    goal: "",
     color: "#1e6b52"
   });
   rosterForm.reset();
@@ -1097,6 +1133,28 @@ rosterList.addEventListener("change", (event) => {
   renderPublicRoster();
   renderRoster();
   renderAthletePage();
+});
+
+toolCatalog.addEventListener("change", (event) => {
+  const toggle = event.target.closest("[data-tool-toggle]");
+  if (!toggle) return;
+  const feature = toggle.dataset.toolToggle;
+  const isRecords = feature === "records";
+
+  if (!requireWriteAccess() || !requireCapability("manageFeatures", "Only coaches can manage app tools.")) {
+    toggle.checked = state.features[feature] !== false;
+    return;
+  }
+
+  if (isRecords && !requireCapability("manageRecords", "Only the head coach can enable records and history.")) {
+    toggle.checked = state.features[feature] !== false;
+    return;
+  }
+
+  state.features[feature] = toggle.checked;
+  saveFeatureFlags();
+  applyFeatureFlags();
+  renderToolCatalog();
 });
 
 athleteProfileForm.addEventListener("submit", (event) => {

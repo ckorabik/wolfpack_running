@@ -87,7 +87,12 @@
           </span>
         </a>
 
-        <nav class="nav-list">
+        <button class="mobile-menu-button" type="button" id="mobileMenuButton" aria-expanded="false" aria-controls="primaryNav">
+          <span>Menu</span>
+          <span aria-hidden="true">v</span>
+        </button>
+
+        <nav class="nav-list" id="primaryNav">
           <button class="nav-item active" type="button" data-view-link="home">
             <span aria-hidden="true">H</span>
             Home
@@ -119,6 +124,10 @@
           <button class="nav-item coach-only" type="button" data-view-link="coach">
             <span aria-hidden="true">C</span>
             Coach Studio
+          </button>
+          <button class="nav-item coach-only" type="button" data-view-link="coachTools">
+            <span aria-hidden="true">T</span>
+            Coach Tools
           </button>
         </nav>
 
@@ -199,7 +208,7 @@
           </div>
         </section>
 
-        <section class="view" id="workouts" data-view="workouts">
+        <section class="view" id="workouts" data-view="workouts" data-feature="workouts">
           <div class="section-head">
             <div>
               <p class="eyebrow">Workout Hub</p>
@@ -217,7 +226,7 @@
           <div class="card-grid" id="workoutGrid"></div>
         </section>
 
-        <section class="view" id="schedule" data-view="schedule">
+        <section class="view" id="schedule" data-view="schedule" data-feature="schedule">
           <div class="section-head">
             <div>
               <p class="eyebrow">Scheduler</p>
@@ -237,7 +246,7 @@
           </div>
         </section>
 
-        <section class="view" id="messages" data-view="messages">
+        <section class="view" id="messages" data-view="messages" data-feature="messages">
           <div class="section-head">
             <div>
               <p class="eyebrow">Messages</p>
@@ -261,18 +270,18 @@
           </div>
         </section>
 
-        <section class="view" id="resources" data-view="resources">
+        <section class="view" id="resources" data-view="resources" data-feature="resources">
           <div class="section-head">
             <div>
               <p class="eyebrow">Resources</p>
-              <h2>Files and links families ask for twice</h2>
+              <h2>Team files and links</h2>
             </div>
             <button class="primary-button coach-only" type="button" data-add-resource>Add Resource</button>
           </div>
           <div class="resource-grid" id="resourceGrid"></div>
         </section>
 
-        <section class="view" id="roster" data-view="roster">
+        <section class="view" id="roster" data-view="roster" data-feature="roster">
           <div class="section-head">
             <div>
               <p class="eyebrow">Roster</p>
@@ -283,7 +292,7 @@
           <div class="level-grid" id="levelRoster"></div>
         </section>
 
-        <section class="view" id="athlete" data-view="athlete">
+        <section class="view" id="athlete" data-view="athlete" data-feature="roster">
           <div class="section-head">
             <div>
               <p class="eyebrow">Athlete Page</p>
@@ -375,7 +384,7 @@
               </label>
               <label>
                 Front page background image URL
-                <input id="heroImageInput" type="url" placeholder="https://example.com/team-photo.jpg">
+                <input id="heroImageInput" type="url" placeholder="Team image URL">
               </label>
               <div class="swatch-row">
                 <label>
@@ -436,13 +445,45 @@
             <section class="panel">
               <div class="panel-heading">
                 <h3>Permissions</h3>
-                <span class="meta">Prototype roles</span>
+                <span class="meta">Role access</span>
               </div>
               <div class="permission-list">
                 <div><strong>Head Coach</strong><span>All coach privileges plus records and history updates.</span></div>
                 <div><strong>Coaches</strong><span>Post announcements, edit schedule, create workouts, change branding.</span></div>
                 <div><strong>Athletes</strong><span>View training, message channels, check schedule.</span></div>
                 <div><strong>Parents</strong><span>See logistics, resources, volunteer requests, and public messages.</span></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="coachTools" data-view="coachTools">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Coach Tools</p>
+              <h2>Capability catalog</h2>
+            </div>
+            <span class="status-pill">Team configuration</span>
+          </div>
+
+          <div class="tools-layout">
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Enabled App Modules</h3>
+                <span class="meta">Visible to this team</span>
+              </div>
+              <div class="tool-catalog" id="toolCatalog"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <h3>Security Boundary</h3>
+                <span class="meta">Role aware</span>
+              </div>
+              <div class="permission-list">
+                <div><strong>Coaches</strong><span>Can enable team modules and manage day-to-day communication tools.</span></div>
+                <div><strong>Head Coach</strong><span>Can also manage records, history, and roster level assignments.</span></div>
+                <div><strong>Families and athletes</strong><span>Only see modules that are enabled for their team workspace.</span></div>
               </div>
             </section>
           </div>

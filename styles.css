@@ -186,6 +186,20 @@ button {
   gap: 6px;
 }
 
+.mobile-menu-button {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 850;
+}
+
 .nav-item {
   display: grid;
   grid-template-columns: 24px 1fr;
@@ -453,6 +467,7 @@ h3 {
 
 .dashboard-grid,
 .coach-layout,
+.tools-layout,
 .message-layout,
 .schedule-layout,
 .records-layout,
@@ -467,6 +482,7 @@ h3 {
 }
 
 .coach-layout,
+.tools-layout,
 .message-layout,
 .records-layout,
 .athlete-layout {
@@ -494,6 +510,7 @@ h3 {
 .resource-grid,
 .card-grid,
 .channel-list,
+.tool-catalog,
 .record-list,
 .history-list,
 .permission-list {
@@ -821,6 +838,74 @@ h3 {
   min-height: 38px;
 }
 
+.tool-catalog {
+  gap: 14px;
+}
+
+.tool-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.tool-card.enabled {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--line) 48%);
+  background: color-mix(in srgb, var(--accent) 7%, #fff 93%);
+}
+
+.tool-card h3 {
+  margin: 8px 0 6px;
+}
+
+.tool-card p {
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.switch-control {
+  display: inline-grid;
+  gap: 8px;
+  justify-items: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.switch-control input {
+  width: 48px;
+  height: 28px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line);
+  position: relative;
+}
+
+.switch-control input::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(34, 29, 24, 0.2);
+}
+
+.switch-control input:checked {
+  background: var(--accent);
+}
+
+.switch-control input:checked::after {
+  transform: translateX(20px);
+}
+
 .swatch-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -876,6 +961,7 @@ dialog::backdrop {
   .hero-band,
   .dashboard-grid,
   .coach-layout,
+  .tools-layout,
   .message-layout,
   .records-layout,
   .athlete-layout {
@@ -902,7 +988,6 @@ dialog::backdrop {
     flex-direction: column;
   }
 
-  .nav-list,
   .auth-tabs,
   .card-grid,
   .resource-grid,
@@ -927,12 +1012,36 @@ dialog::backdrop {
 
   .record-row,
   .history-item,
+  .tool-card,
   .roster-row {
     grid-template-columns: 1fr;
   }
 
   .composer {
     grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .mobile-menu-button {
+    display: flex;
+  }
+
+  .nav-list {
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .sidebar.menu-open .nav-list {
+    display: grid;
   }
 
   .studio-actions,
