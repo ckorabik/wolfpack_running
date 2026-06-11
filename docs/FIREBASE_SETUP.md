@@ -2,7 +2,7 @@
 
 This project now has Firebase scaffolding for Auth, Firestore, Storage, Hosting, Cloud Functions, security rules, indexes, and seed data.
 
-The current app can still run as a static local prototype. The Firebase files are ready for the next integration pass where the UI calls the repository layer in `src/firebase/`.
+The current app can still run as a static local prototype. The login, read-only access, and new-coach team setup screens now call Firebase when the app is served in a browser with your Firebase config present.
 
 ## 1. Create Or Choose A Firebase Project
 
@@ -15,7 +15,7 @@ Firebase's Web SDK setup uses `initializeApp(firebaseConfig)`, and Firestore/Aut
 
 ## 2. Install Local Tooling
 
-From `pack_app`:
+From `wolfpack_running`:
 
 ```bash
 npm install
@@ -65,7 +65,10 @@ In the Firebase console, enable:
 - Cloud Functions
 - Hosting, if you want Firebase to host this static app
 
-For Authentication, start with Email/Password provider.
+For Authentication, enable:
+
+- Email/Password, for coach accounts and future athlete/parent accounts
+- Anonymous, for the read-only team-code flow
 
 ## 6. Deploy Firestore Rules, Storage Rules, And Indexes
 
@@ -86,7 +89,9 @@ npm run firebase:deploy:functions
 
 Firebase docs note that Firestore security rules use `request.auth.uid` for signed-in users, and role-based access is commonly modeled by reading role data from Firestore documents. This project uses `/teams/{teamId}/memberships/{userId}` for that boundary.
 
-The read-only team password flow should go through the callable Cloud Function `joinTeamWithReadOnlyCode`. That function validates the code against a bcrypt hash and creates a `viewer` membership. The browser should not be the real security boundary.
+The read-only team password flow goes through the callable Cloud Function `joinTeamWithReadOnlyCode`. That function validates the code against a bcrypt hash and creates a `viewer` membership. The browser is not the real security boundary.
+
+The new-coach setup flow goes through the callable Cloud Function `createTeamForCoach`. That function creates the team document, starter branding, feature flags, default channels, a welcome announcement, and the creator's `headCoach` membership in one trusted backend step.
 
 ## 7. Firestore Data Model
 
@@ -152,19 +157,32 @@ For first setup, create a real Admin SDK service account JSON in Firebase consol
 
 Never commit that real key.
 
-Then adapt the seed script:
+Then copy your real key into the ignored local file:
 
 ```bash
 cp scripts/serviceAccountKey.example.json scripts/serviceAccountKey.json
 ```
 
-Update `scripts/seedFirestore.example.mjs` to import `serviceAccountKey.json` instead of the example key, then run:
+Then run:
 
 ```bash
 npm run seed:firestore
 ```
 
-The seed creates team shell documents, hashed read-only access codes, branding, feature flags, and the default `all` channel.
+The seed creates the required Firestore collections and starter documents for the Wolfpack workspace: team shell, hashed read-only access code, branding, feature flags, announcements, workouts, schedule events, resources, records, history, roster, channels, and starter messages.
+
+To create the first head coach membership at the same time, provide the Firebase Auth UID:
+
+```bash
+HEAD_COACH_UID=your-auth-uid npm run seed:firestore
+```
+
+In PowerShell:
+
+```powershell
+$env:HEAD_COACH_UID="your-auth-uid"
+npm run seed:firestore
+```
 
 To make your first admin user, create a Firebase Auth user, then manually add this document in Firestore:
 
@@ -181,21 +199,28 @@ To make your first admin user, create a Firebase Auth user, then manually add th
 
 After that, the `setTeamMemberRole` callable can manage future membership changes.
 
-## 10. Wire The UI To Firebase
+## 10. Current UI Firebase Wiring
 
-The Firebase client layer is ready in:
+The Firebase client layer lives in:
 
 - `src/firebase/client.js`
 - `src/firebase/authService.js`
 - `src/firebase/teamRepository.js`
 - `src/firebase/storageService.js`
 - `src/firebase/functionService.js`
-- `src/firebase/backendAdapter.example.js`
+- `src/firebase/browserBridge.js`
 
-The next implementation step is to replace the localStorage functions in `app.js` with repository calls:
+The current `index.html` loads Firebase through an import map and exposes a small `window.firebaseBackend` bridge for the existing non-module `app.js`.
 
-- `getUsers/saveUsers` -> Firebase Auth plus `/teams/{teamId}/memberships`
-- read-only team password -> `joinTeamWithReadOnlyCode`
+Already wired:
+
+- New coach account creation with Firebase Auth
+- New team workspace creation through `createTeamForCoach`
+- Login with Firebase Auth plus team membership lookup
+- Read-only dashboard access through anonymous auth and `joinTeamWithReadOnlyCode`
+
+Still to replace in later passes:
+
 - `getBranding/saveBranding` -> `watchBranding/saveBranding`
 - `loadTeamData/persistTeamData` -> `watchAnnouncements`, `watchRoster`, `watchRecords`, etc.
 - message sends -> `sendMessage`

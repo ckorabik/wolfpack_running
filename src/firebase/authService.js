@@ -1,6 +1,7 @@
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
   updateProfile
@@ -20,6 +21,11 @@ export function observeAuth(callback) {
 
 export async function signIn(email, password) {
   const credential = await signInWithEmailAndPassword(auth, email, password);
+  return credential.user;
+}
+
+export async function signInGuest() {
+  const credential = await signInAnonymously(auth);
   return credential.user;
 }
 

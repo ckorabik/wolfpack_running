@@ -1,7 +1,12 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
-import serviceAccount from "./serviceAccountKey.example.json" assert { type: "json" };
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const serviceAccount = JSON.parse(readFileSync(join(__dirname, "serviceAccountKey.example.json"), "utf8"));
 
 initializeApp({
   credential: cert(serviceAccount)
@@ -16,13 +21,6 @@ const teams = {
     logoText: "PACK",
     publicRead: false,
     readOnlyPassword: "Wolfpack2026"
-  },
-  riverhawks: {
-    name: "Riverhawks XC",
-    sport: "Cross Country",
-    logoText: "RHXC",
-    publicRead: false,
-    readOnlyPassword: "Riverhawks2026"
   }
 };
 
@@ -33,14 +31,6 @@ const branding = {
     primary: "#b3261e",
     accent: "#1e6b52",
     surface: "#f7f4ee",
-    heroImage: ""
-  },
-  riverhawks: {
-    teamName: "Riverhawks XC",
-    logoText: "RHXC",
-    primary: "#005f73",
-    accent: "#9b5de5",
-    surface: "#f4f7f8",
     heroImage: ""
   }
 };
@@ -53,15 +43,6 @@ const featureFlags = {
     resources: true,
     roster: true,
     records: true,
-    coachStudio: true
-  },
-  riverhawks: {
-    workouts: true,
-    schedule: true,
-    messages: true,
-    resources: true,
-    roster: true,
-    records: false,
     coachStudio: true
   }
 };
