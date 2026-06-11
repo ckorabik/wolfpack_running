@@ -1068,7 +1068,12 @@ signupForm.addEventListener("submit", async (event) => {
 
   try {
     if (backend) {
-      const firebaseUser = await backend.signUp({ email, password, name });
+      const createAccount = backend.signUp || backend.signup;
+      if (!createAccount) {
+        throw new Error("Firebase signup is not available. Refresh the page and try again.");
+      }
+
+      const firebaseUser = await createAccount({ email, password, name });
       const setup = await backend.createTeamForCoach({
         teamName,
         sport,
