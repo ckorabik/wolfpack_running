@@ -985,14 +985,10 @@ document.querySelectorAll("[data-auth-tab]").forEach((button) => {
 readonlyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = document.querySelector("#teamPasswordInput").value;
-  const backend = firebaseBackend();
   setFormBusy(readonlyForm, true, "Opening...");
 
   try {
-    if (backend) {
-      await backend.signInGuest();
-      await backend.joinTeamWithReadOnlyCode(state.teamId, password);
-    } else if (password !== currentTenant().accessPassword) {
+    if (password !== currentTenant().accessPassword) {
       showAuthError("That team password did not match.");
       return;
     }
