@@ -424,24 +424,26 @@ function saveFeatureFlags() {
 }
 
 function populateTeamSelect() {
-  if (!teamSelect) return;
   const tenants = Object.values(tenantCatalog).sort((a, b) => a.name.localeCompare(b.name));
-  teamSelect.replaceChildren();
 
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = teamsLoadedFromFirebase ? "Select a team" : "Loading teams...";
-  teamSelect.append(placeholder);
+  if (teamSelect) {
+    teamSelect.replaceChildren();
 
-  tenants.forEach((tenant) => {
-    const option = document.createElement("option");
-    option.value = tenant.id;
-    option.textContent = teamSearchLabel(tenant);
-    teamSelect.append(option);
-  });
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = teamsLoadedFromFirebase ? "Select a team" : "Loading teams...";
+    teamSelect.append(placeholder);
 
-  teamSelect.disabled = !tenants.length;
-  teamSelect.value = state.teamId;
+    tenants.forEach((tenant) => {
+      const option = document.createElement("option");
+      option.value = tenant.id;
+      option.textContent = teamSearchLabel(tenant);
+      teamSelect.append(option);
+    });
+
+    teamSelect.disabled = !tenants.length;
+    teamSelect.value = state.teamId;
+  }
 
   if (teamOptions) {
     teamOptions.replaceChildren();
@@ -453,8 +455,11 @@ function populateTeamSelect() {
     });
   }
 
-  if (teamSearchInput && state.teamId) {
-    teamSearchInput.value = teamSearchLabel(tenantCatalog[state.teamId]);
+  if (teamSearchInput) {
+    teamSearchInput.disabled = !tenants.length;
+    if (state.teamId) {
+      teamSearchInput.value = teamSearchLabel(tenantCatalog[state.teamId]);
+    }
   }
 
   if (teamPickerStatus) {
@@ -1145,7 +1150,7 @@ teamSearchInput?.addEventListener("input", (event) => {
   const team = matchTeamSearch(event.target.value);
   if (team) {
     selectTeam(team.id);
-  } else if (!event.target.value.trim()) {
+  } else {
     selectTeam("", { keepAuth: true });
   }
 });
@@ -1154,6 +1159,8 @@ teamSearchInput?.addEventListener("change", (event) => {
   const team = matchTeamSearch(event.target.value);
   if (team) {
     selectTeam(team.id);
+  } else {
+    selectTeam("", { keepAuth: true });
   }
 });
 

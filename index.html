@@ -26,22 +26,15 @@
         <p class="auth-error" id="authError" role="alert"></p>
         <p class="auth-status loading" id="authStatus" role="status">Connecting to Firebase...</p>
 
-        <div class="team-picker" aria-label="Team selection">
-          <label for="teamSearchInput">
-            Search teams
-            <input id="teamSearchInput" type="search" list="teamOptions" autocomplete="organization" placeholder="Start typing a team name">
-          </label>
-          <datalist id="teamOptions"></datalist>
-          <label for="teamSelect">
-            Select team
-            <select id="teamSelect">
-              <option value="">Loading teams...</option>
-            </select>
-          </label>
-          <p class="team-picker-status" id="teamPickerStatus" role="status">Loading teams...</p>
-        </div>
-
         <form class="auth-form" id="readonlyForm" data-auth-panel="readonly">
+          <div class="team-picker" aria-label="Team selection">
+            <label for="teamSearchInput">
+              Search teams
+              <input id="teamSearchInput" type="search" list="teamOptions" autocomplete="organization" placeholder="Start typing a team name" required>
+            </label>
+            <datalist id="teamOptions"></datalist>
+            <p class="team-picker-status" id="teamPickerStatus" role="status">Loading teams...</p>
+          </div>
           <label>
             Team password
             <input id="teamPasswordInput" type="password" autocomplete="current-password" required>
@@ -559,7 +552,7 @@
         }
       }
     </script>
-    <script type="module" src="src/firebase/browserBridge.js?v=20260617e"></script>
-    <script src="app.js?v=20260617e"></script>
+    <script type="module" src="src/firebase/browserBridge.js?v=20260617f"></script>
+    <script src="app.js?v=20260617f"></script>
   </body>
 </html>
