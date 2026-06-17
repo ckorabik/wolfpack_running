@@ -173,6 +173,7 @@ const firebaseReadyChecks = {
 };
 let firebaseLoadTimedOut = false;
 let teamsLoadedFromFirebase = false;
+let firebaseBackendLoadError = null;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -309,8 +310,12 @@ function updateFirebaseStatus() {
 
   if (activeReady) {
     setAuthStatus("Firebase is ready.", "ready");
+  } else if (firebaseBackendLoadError) {
+    setAuthStatus(`Firebase account services could not load: ${firebaseBackendLoadError.message}`, "error");
+  } else if (teamsLoadedFromFirebase) {
+    setAuthStatus("Team search is connected. Account sign-in is still loading.", "loading");
   } else if (firebaseLoadTimedOut && !anyReady) {
-    setAuthStatus("Firebase could not finish loading. Check your connection, then refresh.", "error");
+    setAuthStatus("Firebase account services are still loading. Team search will keep trying.", "loading");
   } else {
     setAuthStatus("Connecting to Firebase...", "loading");
   }
@@ -581,6 +586,7 @@ function applyTeamList(teams) {
   }
   teamsLoadedFromFirebase = true;
   populateTeamSelect();
+  updateFirebaseStatus();
 }
 
 function saveSession(session) {
@@ -1542,6 +1548,13 @@ athleteProfileForm.addEventListener("submit", (event) => {
 
 window.addEventListener("firebase-backend-ready", () => {
   firebaseLoadTimedOut = false;
+  firebaseBackendLoadError = null;
+  updateFirebaseStatus();
+});
+
+window.addEventListener("firebase-backend-failed", (event) => {
+  firebaseLoadTimedOut = true;
+  firebaseBackendLoadError = event.detail?.error || new Error("The Firebase browser module did not load.");
   updateFirebaseStatus();
 });
 
@@ -1552,6 +1565,10 @@ setTimeout(() => {
 
 localStorage.removeItem(sessionStorageKey);
 restoreSignupDraft();
+if (window.firebaseBackendLoadError) {
+  firebaseLoadTimedOut = true;
+  firebaseBackendLoadError = window.firebaseBackendLoadError;
+}
 populateTeamSelect();
 setActiveTeam(state.teamId, { keepAuth: true });
 lockApp();

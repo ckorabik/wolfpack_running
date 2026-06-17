@@ -552,7 +552,14 @@
         }
       }
     </script>
-    <script type="module" src="src/firebase/browserBridge.js?v=20260617f"></script>
-    <script src="app.js?v=20260617f"></script>
+    <script type="module">
+      try {
+        await import("./src/firebase/browserBridge.js?v=20260617g");
+      } catch (error) {
+        window.firebaseBackendLoadError = error;
+        window.dispatchEvent(new CustomEvent("firebase-backend-failed", { detail: { error } }));
+      }
+    </script>
+    <script src="app.js?v=20260617g"></script>
   </body>
 </html>
