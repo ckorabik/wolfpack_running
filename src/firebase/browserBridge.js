@@ -30,7 +30,7 @@ globalThis.firebaseBackend = Object.assign(globalThis.firebaseBackend || {}, {
   Signup: signUp,
   signup: signUp,
   signUp,
-  version: "20260611c"
+  version: "20260617b"
 });
 
 globalThis.dispatchEvent(new CustomEvent("firebase-backend-ready"));

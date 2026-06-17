@@ -66,8 +66,8 @@ const featureCatalog = [
 ];
 
 const brandingDefaults = {
-  teamName: "Team Hub",
-  logoText: "TEAM",
+  teamName: "Dashboard",
+  logoText: "DASH",
   primary: "#b3261e",
   accent: "#1e6b52",
   surface: "#f7f4ee",
@@ -159,7 +159,7 @@ function emptyTeamData(coachName = "Head Coach") {
   return {
     announcements: [
       {
-        title: "Welcome to your team hub",
+        title: "Welcome to your dashboard",
         body: "Use Coach Studio to tune your branding, roster, records, and communication tools.",
         author: coachName,
         time: "Just now"
@@ -207,6 +207,38 @@ function currentTenant() {
 
 function firebaseBackend() {
   return window.firebaseBackend || null;
+}
+
+function waitForFirebaseBackend(isReady, timeoutMs = 8000) {
+  const readyBackend = firebaseBackend();
+  if (isReady(readyBackend)) {
+    return Promise.resolve(readyBackend);
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (backend) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      window.removeEventListener("firebase-backend-ready", checkBackend);
+      resolve(backend);
+    };
+    const checkBackend = () => {
+      const backend = firebaseBackend();
+      if (isReady(backend)) {
+        finish(backend);
+      }
+    };
+    const timer = setTimeout(() => finish(null), timeoutMs);
+    window.addEventListener("firebase-backend-ready", checkBackend);
+    checkBackend();
+  });
+}
+
+function getFirebaseSignup(backend) {
+  const createAccount = backend?.signUp || backend?.signup || backend?.Signup;
+  return typeof createAccount === "function" ? createAccount : null;
 }
 
 function setFormBusy(form, isBusy, label = "Working...") {
@@ -890,7 +922,6 @@ document.querySelectorAll("[data-auth-tab]").forEach((button) => {
 readonlyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = document.querySelector("#teamPasswordInput").value;
-  const backend = firebaseBackend();
   setFormBusy(readonlyForm, true, "Opening...");
 
   try {
@@ -898,6 +929,11 @@ readonlyForm.addEventListener("submit", async (event) => {
       showAuthError("Create a team or log in as a coach before using a team password.");
       return;
     }
+
+    const backend = await waitForFirebaseBackend((candidate) => (
+      typeof candidate?.signInGuest === "function"
+      && typeof candidate?.joinTeamWithReadOnlyCode === "function"
+    ));
 
     if (backend) {
       await backend.signInGuest();
@@ -920,10 +956,14 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const email = document.querySelector("#loginEmailInput").value.trim().toLowerCase();
   const password = document.querySelector("#loginPasswordInput").value;
-  const backend = firebaseBackend();
   setFormBusy(loginForm, true, "Signing in...");
 
   try {
+    const backend = await waitForFirebaseBackend((candidate) => (
+      typeof candidate?.signIn === "function"
+      && typeof candidate?.getMembership === "function"
+    ));
+
     if (backend) {
       const firebaseUser = await backend.signIn(email, password);
       const access = await resolveFirebaseMembership(backend, firebaseUser, state.teamId);
@@ -968,14 +1008,18 @@ signupForm.addEventListener("submit", async (event) => {
     accent: document.querySelector("#signupAccentInput").value,
     surface: document.querySelector("#signupSurfaceInput").value
   };
-  const backend = firebaseBackend();
   setFormBusy(signupForm, true, "Creating team...");
 
   try {
+    const backend = await waitForFirebaseBackend((candidate) => (
+      getFirebaseSignup(candidate)
+      && typeof candidate?.createTeamForCoach === "function"
+    ));
+
     if (backend) {
-      const createAccount = backend.signUp || backend.signup || backend.Signup;
+      const createAccount = getFirebaseSignup(backend);
       if (!createAccount) {
-        throw new Error("Firebase signup is not available. Refresh the page and try again.");
+        throw new Error("Firebase signup is still loading. Refresh the page and try again.");
       }
 
       const firebaseUser = await createAccount({ email, password, name });

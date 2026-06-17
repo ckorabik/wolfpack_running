@@ -135,7 +135,7 @@ export const createTeamForCoach = onCall(async (request) => {
   });
 
   batch.set(db.doc(`teams/${teamId}/announcements/welcome`), {
-    title: "Welcome to your team hub",
+    title: "Welcome to your dashboard",
     body: "Use Coach Studio to tune your branding, roster, records, and communication tools.",
     author: coachName,
     createdAt: now,
