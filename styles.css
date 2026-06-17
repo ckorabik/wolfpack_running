@@ -172,6 +172,29 @@ button {
   display: block;
 }
 
+.auth-status {
+  margin: -4px 0 0;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: #fff;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.auth-status.ready {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line) 66%);
+  background: color-mix(in srgb, var(--accent) 8%, #fff 92%);
+}
+
+.auth-status.error {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--line) 66%);
+  background: color-mix(in srgb, var(--primary) 8%, #fff 92%);
+}
+
 .sidebar {
   position: sticky;
   top: 0;

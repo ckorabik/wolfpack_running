@@ -116,6 +116,7 @@ const mobileMenuButton = document.querySelector("#mobileMenuButton");
 const appShell = document.querySelector("#appShell");
 const authScreen = document.querySelector("#authScreen");
 const authError = document.querySelector("#authError");
+const authStatus = document.querySelector("#authStatus");
 const readonlyForm = document.querySelector("#readonlyForm");
 const loginForm = document.querySelector("#loginForm");
 const signupForm = document.querySelector("#signupForm");
@@ -151,6 +152,22 @@ const messageInput = document.querySelector("#messageInput");
 const composeDialog = document.querySelector("#composeDialog");
 const composeForm = document.querySelector("#composeForm");
 const brandingForm = document.querySelector("#brandingForm");
+const authForms = [readonlyForm, loginForm, signupForm];
+const firebaseReadyChecks = {
+  readonly: (backend) => (
+    typeof backend?.signInGuest === "function"
+    && typeof backend?.joinTeamWithReadOnlyCode === "function"
+  ),
+  login: (backend) => (
+    typeof backend?.signIn === "function"
+    && typeof backend?.getMembership === "function"
+  ),
+  signup: (backend) => (
+    getFirebaseSignup(backend)
+    && typeof backend?.createTeamForCoach === "function"
+  )
+};
+let firebaseLoadTimedOut = false;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -255,6 +272,40 @@ function getFirebaseSignup(backend) {
   return typeof createAccount === "function" ? createAccount : null;
 }
 
+function currentAuthTab() {
+  return document.querySelector("[data-auth-tab].active")?.dataset.authTab || "signup";
+}
+
+function setAuthStatus(message, stateName = "loading") {
+  if (!authStatus) return;
+  authStatus.textContent = message;
+  authStatus.classList.toggle("loading", stateName === "loading");
+  authStatus.classList.toggle("ready", stateName === "ready");
+  authStatus.classList.toggle("error", stateName === "error");
+}
+
+function updateFirebaseStatus() {
+  const backend = firebaseBackend();
+  const currentTab = currentAuthTab();
+  const activeReady = Boolean(firebaseReadyChecks[currentTab]?.(backend));
+  const anyReady = Object.values(firebaseReadyChecks).some((isReady) => Boolean(isReady(backend)));
+
+  authForms.forEach((form) => {
+    const tab = form.dataset.authPanel;
+    const button = form.querySelector("button[type='submit']");
+    if (!button || button.dataset.busy === "true") return;
+    button.disabled = !firebaseReadyChecks[tab]?.(backend);
+  });
+
+  if (activeReady) {
+    setAuthStatus("Firebase is ready.", "ready");
+  } else if (firebaseLoadTimedOut && !anyReady) {
+    setAuthStatus("Firebase could not finish loading. Check your connection, then refresh.", "error");
+  } else {
+    setAuthStatus("Connecting to Firebase...", "loading");
+  }
+}
+
 function getSignupDraftValues() {
   return signupDraftFields.reduce((draft, fieldId) => {
     const field = document.querySelector(`#${fieldId}`);
@@ -295,12 +346,14 @@ function setFormBusy(form, isBusy, label = "Working...") {
   if (!button) return;
   if (isBusy) {
     button.dataset.originalText = button.textContent;
+    button.dataset.busy = "true";
     button.textContent = label;
     button.disabled = true;
     return;
   }
   button.textContent = button.dataset.originalText || button.textContent;
-  button.disabled = false;
+  delete button.dataset.busy;
+  updateFirebaseStatus();
 }
 
 function registerTenant(team, coachName = "Head Coach") {
@@ -486,6 +539,7 @@ function setAuthTab(tab) {
   document.querySelectorAll("[data-auth-panel]").forEach((panel) => {
     panel.classList.toggle("active", panel.dataset.authPanel === tab);
   });
+  updateFirebaseStatus();
 }
 
 function isReadOnly() {
@@ -996,7 +1050,7 @@ readonlyForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    showAuthError("Firebase is still loading. Refresh the page and try again.");
+    showAuthError("Firebase is still connecting. Wait for the ready message, then try again.");
   } catch (error) {
     showAuthError(firebaseErrorMessage(error, "That team password did not match."));
   } finally {
@@ -1038,7 +1092,7 @@ loginForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    showAuthError("Firebase is still loading. Refresh the page and try again.");
+    showAuthError("Firebase is still connecting. Wait for the ready message, then try again.");
   } catch (error) {
     showAuthError(firebaseErrorMessage(error, "No account matched that email and password."));
   } finally {
@@ -1071,7 +1125,7 @@ signupForm.addEventListener("submit", async (event) => {
     if (backend) {
       const createAccount = getFirebaseSignup(backend);
       if (!createAccount) {
-        throw new Error("Firebase signup is still loading. Refresh the page and try again.");
+        throw new Error("Firebase signup is still connecting. Wait for the ready message, then try again.");
       }
 
       const firebaseUser = await createAccount({ email, password, name });
@@ -1102,7 +1156,7 @@ signupForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    showAuthError("Firebase is still loading. Refresh the page and try again.");
+    showAuthError("Firebase is still connecting. Wait for the ready message, then try again.");
   } catch (error) {
     showAuthError(error.message || "Could not create that team yet. Please try again.");
   } finally {
@@ -1340,10 +1394,21 @@ athleteProfileForm.addEventListener("submit", (event) => {
   renderAthletePage();
 });
 
+window.addEventListener("firebase-backend-ready", () => {
+  firebaseLoadTimedOut = false;
+  updateFirebaseStatus();
+});
+
+setTimeout(() => {
+  firebaseLoadTimedOut = true;
+  updateFirebaseStatus();
+}, 10000);
+
 localStorage.removeItem(sessionStorageKey);
 restoreSignupDraft();
 populateTeamSelect();
 setActiveTeam(state.teamId, { keepAuth: true });
 lockApp();
 setAuthTab("signup");
+updateFirebaseStatus();
 setView(location.hash?.replace("#", "") && pageTitles[location.hash.replace("#", "")] ? location.hash.replace("#", "") : "home");
