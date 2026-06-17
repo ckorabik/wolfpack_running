@@ -8,8 +8,7 @@
     "firebase:deploy:rules": "firebase deploy --only firestore:rules,storage",
     "firebase:deploy:indexes": "firebase deploy --only firestore:indexes",
     "firebase:deploy:functions": "firebase deploy --only functions",
-    "firebase:deploy:hosting": "firebase deploy --only hosting",
-    "seed:firestore": "node scripts/seedFirestore.mjs"
+    "firebase:deploy:hosting": "firebase deploy --only hosting"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

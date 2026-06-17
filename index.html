@@ -3,29 +3,29 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PACK Team Hub</title>
+    <title>Team Hub</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body class="auth-locked">
     <section class="auth-screen" id="authScreen" aria-label="Team login">
       <div class="auth-card">
         <div class="auth-brand">
-          <span class="team-logo" data-logo-mark>PACK</span>
+          <span class="team-logo" data-logo-mark>TEAM</span>
           <div>
             <p class="eyebrow">Secure team hub</p>
-            <h1 data-team-name>PACK Team Hub</h1>
+            <h1 data-team-name>Team Hub</h1>
           </div>
         </div>
 
         <div class="auth-tabs" role="tablist" aria-label="Authentication options">
-          <button class="auth-tab active" type="button" data-auth-tab="readonly">Team Password</button>
+          <button class="auth-tab" type="button" data-auth-tab="readonly">Team Password</button>
           <button class="auth-tab" type="button" data-auth-tab="login">Log In</button>
-          <button class="auth-tab" type="button" data-auth-tab="signup">Set Up Team</button>
+          <button class="auth-tab active" type="button" data-auth-tab="signup">Set Up Team</button>
         </div>
 
         <p class="auth-error" id="authError" role="alert"></p>
 
-        <form class="auth-form active" id="readonlyForm" data-auth-panel="readonly">
+        <form class="auth-form" id="readonlyForm" data-auth-panel="readonly">
           <label>
             Team password
             <input id="teamPasswordInput" type="password" autocomplete="current-password" required>
@@ -45,7 +45,7 @@
           <button class="primary-button" type="submit">Log In</button>
         </form>
 
-        <form class="auth-form" id="signupForm" data-auth-panel="signup">
+        <form class="auth-form active" id="signupForm" data-auth-panel="signup">
           <div class="auth-copy">
             <strong>New coach setup</strong>
             <span>Create your coach account, name your team workspace, and choose the first access code families can use for read-only viewing.</span>
@@ -101,10 +101,10 @@
 
     <div class="app-shell" id="appShell" aria-hidden="true">
       <aside class="sidebar" aria-label="Primary">
-        <a class="brand" href="#home" data-view-link="home" aria-label="PACK Team Hub home">
-          <span class="team-logo" data-logo-mark>PACK</span>
+        <a class="brand" href="#home" data-view-link="home" aria-label="Team Hub home">
+          <span class="team-logo" data-logo-mark>TEAM</span>
           <span>
-            <strong data-team-name>PACK Team Hub</strong>
+            <strong data-team-name>Team Hub</strong>
             <small data-team-sport>Track and Field</small>
           </span>
         </a>
@@ -399,11 +399,11 @@
               </div>
               <label>
                 Team name
-                <input id="teamNameInput" type="text" maxlength="36" value="PACK Team Hub">
+                <input id="teamNameInput" type="text" maxlength="36" value="Team Hub">
               </label>
               <label>
                 Logo text
-                <input id="logoTextInput" type="text" maxlength="8" value="PACK">
+                <input id="logoTextInput" type="text" maxlength="8" value="TEAM">
               </label>
               <label>
                 Front page background image URL

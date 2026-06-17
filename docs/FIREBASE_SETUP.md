@@ -1,6 +1,6 @@
 # Firebase Setup
 
-This project now has Firebase scaffolding for Auth, Firestore, Storage, Hosting, Cloud Functions, security rules, indexes, and seed data.
+This project now has Firebase scaffolding for Auth, Firestore, Storage, Hosting, Cloud Functions, security rules, and indexes.
 
 The current app can still run as a static local prototype. The login, read-only access, and new-coach team setup screens now call Firebase when the app is served in a browser with your Firebase config present.
 
@@ -146,58 +146,16 @@ Important backend boundaries:
 - Viewers can read team data but cannot send messages or mutate team content.
 - Athletes can update their own private profile if their roster document points to their Auth UID.
 
-## 9. Optional Seed Data
+## 9. First Team Setup
 
-For first setup, create a real Admin SDK service account JSON in Firebase console:
+The app no longer ships with a starter team or seed data. Open the hosted app, choose **Set Up Team**, and create a coach account. The signup flow creates:
 
-1. Project settings
-2. Service accounts
-3. Generate new private key
-4. Save it as `scripts/serviceAccountKey.json`
+- A Firebase Auth user for the coach
+- A `/teams/{teamId}` document
+- The coach's `/teams/{teamId}/memberships/{userUid}` document with `role: "headCoach"`
+- Starter branding, feature flags, and message channels
 
-Never commit that real key.
-
-Then copy your real key into the ignored local file:
-
-```bash
-cp scripts/serviceAccountKey.example.json scripts/serviceAccountKey.json
-```
-
-Then run:
-
-```bash
-npm run seed:firestore
-```
-
-The seed creates the required Firestore collections and starter documents for the Wolfpack workspace: team shell, hashed read-only access code, branding, feature flags, announcements, workouts, schedule events, resources, records, history, roster, channels, and starter messages.
-
-To create the first head coach membership at the same time, provide the Firebase Auth UID:
-
-```bash
-HEAD_COACH_UID=your-auth-uid npm run seed:firestore
-```
-
-In PowerShell:
-
-```powershell
-$env:HEAD_COACH_UID="your-auth-uid"
-npm run seed:firestore
-```
-
-To make your first admin user, create a Firebase Auth user, then manually add this document in Firestore:
-
-```text
-/teams/{teamId}/memberships/{userUid}
-```
-
-```json
-{
-  "role": "headCoach",
-  "athleteId": null
-}
-```
-
-After that, the `setTeamMemberRole` callable can manage future membership changes.
+After that, use the **Log In** tab with the coach email and password. The app reads the signed-in user's Firebase team profile and opens that team automatically.
 
 ## 10. Current UI Firebase Wiring
 

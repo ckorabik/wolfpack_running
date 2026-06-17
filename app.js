@@ -1,174 +1,36 @@
 const state = {
   session: null,
-  teamId: "wolfpack",
+  teamId: "",
   features: {},
   role: "athlete",
   view: "home",
   workoutFilter: "all",
   activeChannel: "all",
   activeAthleteIndex: 0,
-  announcements: [
-    {
-      title: "Uniform check on Thursday",
-      body: "Bring both singlets and warmups to practice. Coaches will confirm meet-day kits before strides.",
-      author: "Coach Rivera",
-      time: "8:15 AM"
-    },
-    {
-      title: "Parent volunteer slots are open",
-      body: "We still need two lane timers and one snack table helper for the Friday invite.",
-      author: "Booster Club",
-      time: "Yesterday"
-    },
-    {
-      title: "Recovery reminder",
-      body: "Prioritize sleep, hydration, and a balanced dinner during meet week.",
-      author: "Coach Malik",
-      time: "Monday"
-    }
-  ],
-  workouts: [
-    {
-      group: "sprints",
-      title: "Acceleration + handoffs",
-      focus: "Starts, drive phase, 4x100 exchanges",
-      details: ["6 x 30m", "4 x flying 20m", "Relay zones"],
-      coach: "Coach Rivera"
-    },
-    {
-      group: "distance",
-      title: "Controlled tempo intervals",
-      focus: "Threshold rhythm without racing practice",
-      details: ["12 min warmup", "5 x 1k", "200m jog"],
-      coach: "Coach Owens"
-    },
-    {
-      group: "jumps",
-      title: "Approach consistency",
-      focus: "Check marks, posture, takeoff timing",
-      details: ["Pop-ups", "6 full approaches", "Core"],
-      coach: "Coach Malik"
-    },
-    {
-      group: "throws",
-      title: "Power position series",
-      focus: "Balance, release angle, footwork",
-      details: ["Med ball", "Stand throws", "Video review"],
-      coach: "Coach Chen"
-    },
-    {
-      group: "distance",
-      title: "Pre-meet shakeout",
-      focus: "Keep legs sharp and relaxed",
-      details: ["25 min easy", "4 strides", "Mobility"],
-      coach: "Coach Owens"
-    },
-    {
-      group: "sprints",
-      title: "Speed endurance",
-      focus: "Race posture under fatigue",
-      details: ["3 x 150m", "Full recovery", "Cooldown"],
-      coach: "Coach Rivera"
-    }
-  ],
-  events: [
-    { date: "2026-06-08", time: "3:30", title: "Practice", detail: "Track warmup, event groups after drills", type: "Practice" },
-    { date: "2026-06-09", time: "4:15", title: "Weight room", detail: "Sprinters and throwers lift, distance mobility", type: "Training" },
-    { date: "2026-06-10", time: "6:00", title: "Parent meeting", detail: "Travel, fundraising, and postseason expectations", type: "Meeting" },
-    { date: "2026-06-12", time: "5:00", title: "Friday Night Invite", detail: "Bus loads at 2:45 PM from the athletic entrance", type: "Meet" },
-    { date: "2026-06-15", time: "3:30", title: "Recovery run", detail: "Easy groups plus event-specific rehab work", type: "Practice" }
-  ],
-  resources: [
-    { title: "Meet day packing list", kind: "Checklist", body: "Uniform, spikes, water bottle, warmups, recovery snack, and school ID." },
-    { title: "Travel release form", kind: "Form", body: "Required when an athlete leaves a meet with a parent or guardian." },
-    { title: "Season calendar", kind: "Calendar", body: "Printable overview for practices, invites, championship dates, and breaks." },
-    { title: "Nutrition guide", kind: "Guide", body: "Simple pre-practice and race-day meal ideas for athletes and families." },
-    { title: "Volunteer sign-up", kind: "Link", body: "Timing, concessions, tent setup, photography, and post-meet cleanup." },
-    { title: "Athletic trainer hours", kind: "Info", body: "Treatment windows, injury reporting, and return-to-practice steps." }
-  ],
-  records: [
-    { event: "100m", mark: "10.84", athlete: "Andre Bell", year: "2024", division: "Boys Varsity" },
-    { event: "400m", mark: "48.92", athlete: "Marcus Hill", year: "2023", division: "Boys Varsity" },
-    { event: "1600m", mark: "4:17.36", athlete: "Eli Turner", year: "2025", division: "Boys Varsity" },
-    { event: "100m", mark: "12.11", athlete: "Nia Brooks", year: "2025", division: "Girls Varsity" },
-    { event: "800m", mark: "2:13.44", athlete: "Sofia Martin", year: "2022", division: "Girls Varsity" },
-    { event: "Long Jump", mark: "19-02.25", athlete: "Jade Coleman", year: "2024", division: "Girls Varsity" }
-  ],
-  history: [
-    { year: "2026", title: "New communication hub launched", body: "The program moved workouts, meet logistics, and team messages into one shared dashboard." },
-    { year: "2025", title: "Distance double at sectionals", body: "The team won both 1600m races and qualified seven athletes for state." },
-    { year: "2024", title: "Sprint relay record", body: "The 4x100 relay lowered the school record twice in the same postseason." },
-    { year: "2022", title: "First combined conference title", body: "Boys and girls varsity teams both finished first at the conference championship." }
-  ],
-  roster: [
-    { name: "Maya Patel", group: "Distance", grade: "12", level: "Varsity", bio: "Varsity distance runner and team captain.", goal: "Break 5:05 in the 1600m", color: "#1e6b52" },
-    { name: "Andre Bell", group: "Sprints", grade: "11", level: "Varsity", bio: "Explosive starter focused on the 100m and 4x100 relay.", goal: "Own the final 30 meters", color: "#b3261e" },
-    { name: "Jade Coleman", group: "Jumps", grade: "12", level: "Junior Varsity", bio: "Long jumper building consistency through the board.", goal: "Hit 19 feet again at sectionals", color: "#6b4ee6" },
-    { name: "Theo Chen", group: "Throws", grade: "10", level: "Freshman", bio: "Shot and discus thrower learning the rhythm of big meets.", goal: "Add five feet before conference", color: "#8a5a22" }
-  ],
-  channels: [
-    {
-      id: "all",
-      name: "All Team",
-      audience: "Coaches, athletes, and parents",
-      messages: [
-        { from: "Coach Rivera", body: "Great work at practice today. Meet entries will be posted tomorrow morning.", time: "4:52 PM" },
-        { from: "Maya P.", body: "Can someone send the warmup playlist link again?", time: "5:06 PM" }
-      ]
-    },
-    {
-      id: "parents",
-      name: "Parents",
-      audience: "Family logistics",
-      messages: [
-        { from: "Booster Club", body: "The snack table is covered for Friday. Thank you to everyone who jumped in.", time: "2:18 PM" }
-      ]
-    },
-    {
-      id: "captains",
-      name: "Captains",
-      audience: "Team leaders and coaches",
-      messages: [
-        { from: "Coach Malik", body: "Captains, please check in with freshmen before tomorrow's cooldown.", time: "11:12 AM" }
-      ]
-    }
-  ]
+  announcements: [],
+  workouts: [],
+  events: [],
+  resources: [],
+  records: [],
+  history: [],
+  roster: [],
+  channels: []
 };
 
-const tenantCatalog = {
-  wolfpack: {
-    id: "wolfpack",
-    name: "PACK Team Hub",
-    sport: "Track and Field",
-    logoText: "PACK",
-    accessPassword: "Wolfpack2026",
-    features: {
-      workouts: true,
-      schedule: true,
-      messages: true,
-      resources: true,
-      roster: true,
-      records: true,
-      coachStudio: true
-    },
-    branding: {
-      teamName: "PACK Team Hub",
-      logoText: "PACK",
-      primary: "#b3261e",
-      accent: "#1e6b52",
-      surface: "#f7f4ee",
-      heroImage: ""
-    }
-  }
+const defaultFeatures = {
+  workouts: true,
+  schedule: true,
+  messages: true,
+  resources: true,
+  roster: true,
+  records: true,
+  coachStudio: true
 };
 
-const tenantDataDefaults = {
-  wolfpack: cloneTeamData(state)
-};
+const tenantCatalog = {};
+const tenantDataDefaults = {};
 
 const sessionStorageKey = "packSession";
-const legacyUsersStorageKey = "packUsers";
-const legacyBrandingStorageKey = "packBranding";
 
 const featureCatalog = [
   {
@@ -204,8 +66,8 @@ const featureCatalog = [
 ];
 
 const brandingDefaults = {
-  teamName: "PACK Team Hub",
-  logoText: "PACK",
+  teamName: "Team Hub",
+  logoText: "TEAM",
   primary: "#b3261e",
   accent: "#1e6b52",
   surface: "#f7f4ee",
@@ -333,7 +195,14 @@ function emptyTeamData(coachName = "Head Coach") {
 }
 
 function currentTenant() {
-  return tenantCatalog[state.teamId] || tenantCatalog.wolfpack;
+  return tenantCatalog[state.teamId] || {
+    id: "",
+    name: brandingDefaults.teamName,
+    sport: "Track and Field",
+    logoText: brandingDefaults.logoText,
+    features: defaultFeatures,
+    branding: brandingDefaults
+  };
 }
 
 function firebaseBackend() {
@@ -359,15 +228,8 @@ function registerTenant(team, coachName = "Head Coach") {
     name: team.name,
     sport: team.sport || "Track and Field",
     logoText: team.logoText || team.branding?.logoText || "TEAM",
-    accessPassword: "",
     features: {
-      workouts: true,
-      schedule: true,
-      messages: true,
-      resources: true,
-      roster: true,
-      records: true,
-      coachStudio: true,
+      ...defaultFeatures,
       ...(team.features || {})
     },
     branding: {
@@ -379,10 +241,6 @@ function registerTenant(team, coachName = "Head Coach") {
   };
   tenantDataDefaults[team.id] = emptyTeamData(coachName);
   populateTeamSelect();
-}
-
-function usersStorageKey() {
-  return `packUsers:${state.teamId}`;
 }
 
 function brandingStorageKey() {
@@ -398,7 +256,7 @@ function teamDataStorageKey() {
 }
 
 function loadTeamData(teamId) {
-  const defaults = clone(tenantDataDefaults[teamId]);
+  const defaults = clone(tenantDataDefaults[teamId] || emptyTeamData());
   const saved = localStorage.getItem(`packTeamData:${teamId}`);
   return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
 }
@@ -410,7 +268,8 @@ function persistTeamData() {
 function loadFeatureFlags(teamId) {
   const saved = localStorage.getItem(`packFeatures:${teamId}`);
   return {
-    ...tenantCatalog[teamId].features,
+    ...defaultFeatures,
+    ...(tenantCatalog[teamId]?.features || {}),
     ...(saved ? JSON.parse(saved) : {})
   };
 }
@@ -424,6 +283,7 @@ function populateTeamSelect() {
   teamSelect.innerHTML = Object.values(tenantCatalog)
     .map((tenant) => `<option value="${tenant.id}">${tenant.name}</option>`)
     .join("");
+  teamSelect.disabled = !Object.keys(tenantCatalog).length;
   teamSelect.value = state.teamId;
 }
 
@@ -440,7 +300,7 @@ function applyFeatureFlags() {
 }
 
 function setActiveTeam(teamId, options = {}) {
-  state.teamId = tenantCatalog[teamId] ? teamId : "wolfpack";
+  state.teamId = tenantCatalog[teamId] ? teamId : "";
   state.features = loadFeatureFlags(state.teamId);
   const data = loadTeamData(state.teamId);
   Object.assign(state, data, {
@@ -460,20 +320,6 @@ function setActiveTeam(teamId, options = {}) {
   }
 }
 
-function getUsers() {
-  const saved = localStorage.getItem(usersStorageKey());
-  const legacyUsers = localStorage.getItem(legacyUsersStorageKey);
-  if (!saved && legacyUsers && state.teamId === "wolfpack") {
-    localStorage.setItem(usersStorageKey(), legacyUsers);
-    return JSON.parse(legacyUsers);
-  }
-  return saved ? JSON.parse(saved) : [];
-}
-
-function saveUsers(users) {
-  localStorage.setItem(usersStorageKey(), JSON.stringify(users));
-}
-
 function saveSession(session) {
   localStorage.setItem(sessionStorageKey, JSON.stringify(session));
 }
@@ -491,6 +337,64 @@ function clearAuthError() {
 function showAuthError(message) {
   authError.textContent = message;
   authError.classList.add("visible");
+}
+
+function firebaseErrorMessage(error, fallback) {
+  const code = error?.code || "";
+  if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password") || code.includes("auth/user-not-found")) {
+    return "No account matched that email and password.";
+  }
+  if (code.includes("auth/too-many-requests")) {
+    return "Too many sign-in attempts. Wait a bit, then try again.";
+  }
+  if (code.includes("functions/permission-denied")) {
+    return "That team password did not match.";
+  }
+  if (code.includes("permission-denied")) {
+    return "Firebase blocked this account from opening that team workspace.";
+  }
+  return error?.message || fallback;
+}
+
+async function registerFirebaseTeam(backend, teamId) {
+  if (!teamId || tenantCatalog[teamId]) return;
+  if (!backend?.getTeam) return;
+  const team = await backend.getTeam(teamId);
+  if (!team) return;
+  registerTenant({
+    id: teamId,
+    name: team.name || teamId,
+    sport: team.sport || "Track and Field",
+    logoText: team.logoText || team.name?.slice(0, 4) || "TEAM",
+    features: team.features || {},
+    branding: team.branding || {}
+  });
+  populateTeamSelect();
+}
+
+async function resolveFirebaseMembership(backend, firebaseUser, preferredTeamId) {
+  if (preferredTeamId) {
+    const preferredMembership = await backend.getMembership(preferredTeamId, firebaseUser.uid);
+    if (preferredMembership) {
+      return { teamId: preferredTeamId, membership: preferredMembership };
+    }
+  }
+
+  const profile = await backend.getUserProfile?.(firebaseUser.uid);
+  const teamIds = [
+    profile?.defaultTeamId,
+    ...(Array.isArray(profile?.teamIds) ? profile.teamIds : [])
+  ].filter(Boolean);
+
+  for (const teamId of [...new Set(teamIds)]) {
+    const membership = await backend.getMembership(teamId, firebaseUser.uid);
+    if (membership) {
+      await registerFirebaseTeam(backend, teamId);
+      return { teamId, membership };
+    }
+  }
+
+  return null;
 }
 
 function setAuthTab(tab) {
@@ -589,11 +493,6 @@ function applyAuthPermissions() {
 function getBranding() {
   const defaults = { ...brandingDefaults, ...currentTenant().branding };
   const saved = localStorage.getItem(brandingStorageKey());
-  const legacyBranding = localStorage.getItem(legacyBrandingStorageKey);
-  if (!saved && legacyBranding && state.teamId === "wolfpack") {
-    localStorage.setItem(brandingStorageKey(), legacyBranding);
-    return { ...defaults, ...JSON.parse(legacyBranding) };
-  }
   return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
 }
 
@@ -680,7 +579,7 @@ function toggleMobileMenu() {
 }
 
 function renderAnnouncements() {
-  announcementList.innerHTML = state.announcements
+  announcementList.innerHTML = state.announcements.length ? state.announcements
     .map((item) => `
       <article class="announcement">
         <strong>${item.title}</strong>
@@ -688,12 +587,12 @@ function renderAnnouncements() {
         <span class="meta">${item.author} - ${item.time}</span>
       </article>
     `)
-    .join("");
+    .join("") : `<p class="empty-note">No announcements yet.</p>`;
 }
 
 function renderWorkouts() {
   const workouts = state.workouts.filter((item) => state.workoutFilter === "all" || item.group === state.workoutFilter);
-  workoutGrid.innerHTML = workouts
+  workoutGrid.innerHTML = workouts.length ? workouts
     .map((item) => `
       <article class="workout-card">
         <header>
@@ -709,7 +608,7 @@ function renderWorkouts() {
         <span class="meta">${item.coach}</span>
       </article>
     `)
-    .join("");
+    .join("") : `<p class="empty-note">No workouts yet.</p>`;
 }
 
 function renderSchedule() {
@@ -729,14 +628,14 @@ function renderSchedule() {
         <article class="calendar-day ${event ? "has-event" : ""}">
           <span class="meta">${label}</span>
           <strong>${day.getDate()}</strong>
-          <span>${event ? event.title : "Open training"}</span>
-          <small>${event ? event.time : "Self-led"}</small>
+          <span>${event ? event.title : "No event"}</span>
+          <small>${event ? event.time : "Open"}</small>
         </article>
       `;
     })
     .join("");
 
-  eventTimeline.innerHTML = state.events
+  eventTimeline.innerHTML = state.events.length ? state.events
     .map((event) => {
       const date = new Date(`${event.date}T12:00:00`);
       return `
@@ -750,11 +649,11 @@ function renderSchedule() {
         </article>
       `;
     })
-    .join("");
+    .join("") : `<p class="empty-note">No scheduled events yet.</p>`;
 }
 
 function renderResources() {
-  resourceGrid.innerHTML = state.resources
+  resourceGrid.innerHTML = state.resources.length ? state.resources
     .map((resource) => `
       <article class="resource-card">
         <header>
@@ -765,7 +664,7 @@ function renderResources() {
         <button class="secondary-button" type="button">Open</button>
       </article>
     `)
-    .join("");
+    .join("") : `<p class="empty-note">No resources yet.</p>`;
 }
 
 function getActiveAthlete() {
@@ -807,7 +706,7 @@ function renderPublicRoster() {
 }
 
 function renderRecords() {
-  recordList.innerHTML = state.records
+  recordList.innerHTML = state.records.length ? state.records
     .map((record) => `
       <article class="record-row">
         <div>
@@ -820,9 +719,9 @@ function renderRecords() {
         </div>
       </article>
     `)
-    .join("");
+    .join("") : `<p class="empty-note">No records yet.</p>`;
 
-  historyList.innerHTML = state.history
+  historyList.innerHTML = state.history.length ? state.history
     .map((item) => `
       <article class="history-item">
         <span class="history-year">${item.year}</span>
@@ -832,11 +731,11 @@ function renderRecords() {
         </div>
       </article>
     `)
-    .join("");
+    .join("") : `<p class="empty-note">No history items yet.</p>`;
 }
 
 function renderRoster() {
-  rosterList.innerHTML = state.roster
+  rosterList.innerHTML = state.roster.length ? state.roster
     .map((athlete, index) => `
       <article class="roster-row">
         <div>
@@ -851,7 +750,7 @@ function renderRoster() {
         <button class="text-button coach-only" type="button" data-remove-roster="${index}">Remove</button>
       </article>
     `)
-    .join("");
+    .join("") : `<p class="empty-note">No athletes yet.</p>`;
 
   rosterList.querySelectorAll("[data-roster-level]").forEach((select) => {
     select.disabled = !isHeadCoach();
@@ -887,7 +786,7 @@ function renderAthletePage() {
 }
 
 function renderChannels() {
-  channelList.innerHTML = state.channels
+  channelList.innerHTML = state.channels.length ? state.channels
     .map((channel) => `
       <button class="channel-button ${channel.id === state.activeChannel ? "active" : ""}" type="button" data-channel="${channel.id}">
         <span>
@@ -897,12 +796,18 @@ function renderChannels() {
         <span class="tag">${channel.messages.length}</span>
       </button>
     `)
-    .join("");
+    .join("") : `<p class="empty-note">No message channels yet.</p>`;
 
   const channel = state.channels.find((item) => item.id === state.activeChannel);
+  if (!channel) {
+    activeChannelName.textContent = "Messages";
+    activeChannelAudience.textContent = "No channel selected";
+    chatLog.innerHTML = `<p class="empty-note">Create a team to start messaging.</p>`;
+    return;
+  }
   activeChannelName.textContent = channel.name;
   activeChannelAudience.textContent = channel.audience;
-  chatLog.innerHTML = channel.messages
+  chatLog.innerHTML = channel.messages.length ? channel.messages
     .map((message) => `
       <article class="chat-message">
         <strong>${message.from}</strong>
@@ -910,7 +815,7 @@ function renderChannels() {
         <span class="meta">${message.time}</span>
       </article>
     `)
-    .join("");
+    .join("") : `<p class="empty-note">No messages yet.</p>`;
 }
 
 function renderToolCatalog() {
@@ -975,7 +880,7 @@ roleSelect.addEventListener("change", (event) => setRole(event.target.value));
 
 teamSelect?.addEventListener("change", (event) => {
   setActiveTeam(event.target.value);
-  setAuthTab("readonly");
+  setAuthTab(event.target.value ? "readonly" : "signup");
 });
 
 document.querySelectorAll("[data-auth-tab]").forEach((button) => {
@@ -985,19 +890,27 @@ document.querySelectorAll("[data-auth-tab]").forEach((button) => {
 readonlyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = document.querySelector("#teamPasswordInput").value;
+  const backend = firebaseBackend();
   setFormBusy(readonlyForm, true, "Opening...");
 
   try {
-    if (password !== currentTenant().accessPassword) {
-      showAuthError("That team password did not match.");
+    if (!state.teamId) {
+      showAuthError("Create a team or log in as a coach before using a team password.");
       return;
     }
 
-    readonlyForm.reset();
-    clearAuthError();
-    unlockApp({ mode: "readonly", name: "Read-only guest", role: "viewer", teamId: state.teamId });
+    if (backend) {
+      await backend.signInGuest();
+      const access = await backend.joinTeamWithReadOnlyCode(state.teamId, password);
+      readonlyForm.reset();
+      clearAuthError();
+      unlockApp({ mode: "readonly", name: "Read-only guest", role: access.role || "viewer", teamId: access.teamId || state.teamId });
+      return;
+    }
+
+    showAuthError("Firebase is still loading. Refresh the page and try again.");
   } catch (error) {
-    showAuthError(error.message || "That team password did not match.");
+    showAuthError(firebaseErrorMessage(error, "That team password did not match."));
   } finally {
     setFormBusy(readonlyForm, false);
   }
@@ -1013,36 +926,29 @@ loginForm.addEventListener("submit", async (event) => {
   try {
     if (backend) {
       const firebaseUser = await backend.signIn(email, password);
-      const membership = await backend.getMembership(state.teamId, firebaseUser.uid);
-      if (!membership) {
+      const access = await resolveFirebaseMembership(backend, firebaseUser, state.teamId);
+      if (!access) {
         showAuthError("That account is not connected to this team workspace yet.");
         return;
       }
 
       loginForm.reset();
       clearAuthError();
+      setActiveTeam(access.teamId, { keepAuth: true });
       unlockApp({
         mode: "user",
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || firebaseUser.email,
         email: firebaseUser.email,
-        role: membership.role,
-        teamId: state.teamId
+        role: access.membership.role,
+        teamId: access.teamId
       });
       return;
     }
 
-    const user = getUsers().find((item) => item.email === email && item.password === password);
-    if (!user) {
-      showAuthError("No account matched that email and password.");
-      return;
-    }
-
-    loginForm.reset();
-    clearAuthError();
-    unlockApp({ mode: "user", name: user.name, email: user.email, role: user.role, teamId: state.teamId });
+    showAuthError("Firebase is still loading. Refresh the page and try again.");
   } catch (error) {
-    showAuthError(error.message || "No account matched that email and password.");
+    showAuthError(firebaseErrorMessage(error, "No account matched that email and password."));
   } finally {
     setFormBusy(loginForm, false);
   }
@@ -1097,34 +1003,7 @@ signupForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    const fallbackId = teamName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 42);
-    const teamId = fallbackId || `team-${Date.now()}`;
-    registerTenant({
-      id: teamId,
-      name: teamName,
-      sport,
-      logoText,
-      branding: {
-        ...branding,
-        teamName,
-        logoText
-      }
-    }, name);
-    tenantCatalog[teamId].accessPassword = accessCode;
-    setActiveTeam(teamId, { keepAuth: true });
-    const users = getUsers();
-    if (users.some((user) => user.email === email)) {
-      showAuthError("An account already exists for that email.");
-      return;
-    }
-
-    const user = { name, email, password, role: "headCoach" };
-    users.push(user);
-    saveUsers(users);
-    signupForm.reset();
-    clearAuthError();
-    unlockApp({ mode: "user", name: user.name, email: user.email, role: user.role, teamId });
-    setView("coach");
+    showAuthError("Firebase is still loading. Refresh the page and try again.");
   } catch (error) {
     showAuthError(error.message || "Could not create that team yet. Please try again.");
   } finally {
@@ -1139,7 +1018,7 @@ logoutButton.addEventListener("click", async () => {
     console.warn("Firebase sign out failed", error);
   }
   lockApp();
-  setAuthTab("readonly");
+  setAuthTab(Object.keys(tenantCatalog).length ? "readonly" : "signup");
 });
 
 channelList.addEventListener("click", (event) => {
@@ -1362,13 +1241,9 @@ athleteProfileForm.addEventListener("submit", (event) => {
   renderAthletePage();
 });
 
+localStorage.removeItem(sessionStorageKey);
 populateTeamSelect();
-const savedSession = getSavedSession();
-if (savedSession) {
-  setActiveTeam(savedSession.teamId || "wolfpack", { keepAuth: true });
-  unlockApp(savedSession);
-} else {
-  setActiveTeam(state.teamId, { keepAuth: true });
-  lockApp();
-}
+setActiveTeam(state.teamId, { keepAuth: true });
+lockApp();
+setAuthTab("signup");
 setView(location.hash?.replace("#", "") && pageTitles[location.hash.replace("#", "")] ? location.hash.replace("#", "") : "home");

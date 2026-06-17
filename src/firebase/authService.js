@@ -50,6 +50,11 @@ export async function getMembership(teamId, userId) {
   return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
 }
 
+export async function getUserProfile(userId) {
+  const snapshot = await getDoc(doc(db, "users", userId));
+  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+}
+
 export async function createMembership({ teamId, userId, role = roles.athlete, athleteId = null }) {
   await setDoc(doc(db, "teams", teamId, "memberships", userId), {
     role,

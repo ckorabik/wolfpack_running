@@ -1,5 +1,6 @@
 import {
   getMembership,
+  getUserProfile,
   observeAuth,
   signIn,
   signInGuest,
@@ -12,16 +13,19 @@ import {
   setReadOnlyCode,
   setTeamMemberRole
 } from "./functionService.js";
+import { getTeam } from "./teamRepository.js";
 
 globalThis.firebaseBackend = Object.assign(globalThis.firebaseBackend || {}, {
   createTeamForCoach,
   getMembership,
+  getTeam,
   joinTeamWithReadOnlyCode,
   observeAuth,
   setReadOnlyCode,
   setTeamMemberRole,
   signIn,
   signInGuest,
+  getUserProfile,
   signOutCurrentUser,
   Signup: signUp,
   signup: signUp,
