@@ -55,6 +55,8 @@ async function assertHeadCoach(teamId, uid) {
 export const createTeamForCoach = onCall(async (request) => {
   assertSignedIn(request);
   const {
+    coachName: submittedCoachName,
+    coachEmail: submittedCoachEmail,
     teamName,
     sport = "Track and Field",
     logoText,
@@ -91,8 +93,8 @@ export const createTeamForCoach = onCall(async (request) => {
 
   const now = FieldValue.serverTimestamp();
   const readOnlyPasswordHash = await bcrypt.hash(String(accessCode), 12);
-  const coachName = cleanText(request.auth.token.name, "Head Coach");
-  const coachEmail = cleanText(request.auth.token.email);
+  const coachName = cleanText(submittedCoachName || request.auth.token.name, "Head Coach");
+  const coachEmail = cleanText(submittedCoachEmail || request.auth.token.email);
   const safeBranding = {
     teamName: name,
     logoText: cleanText(logoText, name.slice(0, 4)).slice(0, 12).toUpperCase(),
@@ -168,6 +170,7 @@ export const createTeamForCoach = onCall(async (request) => {
     email: coachEmail,
     defaultTeamId: teamId,
     teamIds: FieldValue.arrayUnion(teamId),
+    createdAt: now,
     updatedAt: now
   }, { merge: true });
 

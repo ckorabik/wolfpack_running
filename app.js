@@ -31,6 +31,7 @@ const tenantCatalog = {};
 const tenantDataDefaults = {};
 
 const sessionStorageKey = "packSession";
+const signupDraftStorageKey = "dashboardSignupDraft";
 
 const featureCatalog = [
   {
@@ -73,6 +74,19 @@ const brandingDefaults = {
   surface: "#f7f4ee",
   heroImage: ""
 };
+
+const signupDraftFields = [
+  "signupNameInput",
+  "signupEmailInput",
+  "signupPasswordInput",
+  "signupTeamNameInput",
+  "signupSportInput",
+  "signupLogoTextInput",
+  "signupAccessCodeInput",
+  "signupPrimaryInput",
+  "signupAccentInput",
+  "signupSurfaceInput"
+];
 
 const pageTitles = {
   home: "Home",
@@ -239,6 +253,41 @@ function waitForFirebaseBackend(isReady, timeoutMs = 8000) {
 function getFirebaseSignup(backend) {
   const createAccount = backend?.signUp || backend?.signup || backend?.Signup;
   return typeof createAccount === "function" ? createAccount : null;
+}
+
+function getSignupDraftValues() {
+  return signupDraftFields.reduce((draft, fieldId) => {
+    const field = document.querySelector(`#${fieldId}`);
+    if (field) {
+      draft[fieldId] = field.value;
+    }
+    return draft;
+  }, {});
+}
+
+function saveSignupDraft() {
+  sessionStorage.setItem(signupDraftStorageKey, JSON.stringify(getSignupDraftValues()));
+}
+
+function restoreSignupDraft() {
+  const saved = sessionStorage.getItem(signupDraftStorageKey);
+  if (!saved) return;
+
+  try {
+    const draft = JSON.parse(saved);
+    signupDraftFields.forEach((fieldId) => {
+      const field = document.querySelector(`#${fieldId}`);
+      if (field && draft[fieldId] !== undefined) {
+        field.value = draft[fieldId];
+      }
+    });
+  } catch (error) {
+    sessionStorage.removeItem(signupDraftStorageKey);
+  }
+}
+
+function clearSignupDraft() {
+  sessionStorage.removeItem(signupDraftStorageKey);
 }
 
 function setFormBusy(form, isBusy, label = "Working...") {
@@ -919,6 +968,9 @@ document.querySelectorAll("[data-auth-tab]").forEach((button) => {
   button.addEventListener("click", () => setAuthTab(button.dataset.authTab));
 });
 
+signupForm.addEventListener("input", saveSignupDraft);
+signupForm.addEventListener("change", saveSignupDraft);
+
 readonlyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = document.querySelector("#teamPasswordInput").value;
@@ -1024,6 +1076,8 @@ signupForm.addEventListener("submit", async (event) => {
 
       const firebaseUser = await createAccount({ email, password, name });
       const setup = await backend.createTeamForCoach({
+        coachName: name,
+        coachEmail: email,
         teamName,
         sport,
         logoText,
@@ -1033,6 +1087,7 @@ signupForm.addEventListener("submit", async (event) => {
 
       registerTenant(setup.team, name);
       signupForm.reset();
+      clearSignupDraft();
       clearAuthError();
       setActiveTeam(setup.teamId, { keepAuth: true });
       unlockApp({
@@ -1286,6 +1341,7 @@ athleteProfileForm.addEventListener("submit", (event) => {
 });
 
 localStorage.removeItem(sessionStorageKey);
+restoreSignupDraft();
 populateTeamSelect();
 setActiveTeam(state.teamId, { keepAuth: true });
 lockApp();
