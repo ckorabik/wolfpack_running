@@ -52,6 +52,21 @@ async function assertHeadCoach(teamId, uid) {
   }
 }
 
+export const listTeamsForSignIn = onCall(async () => {
+  const snapshot = await db.collection("teams").orderBy("name").limit(100).get();
+  return {
+    teams: snapshot.docs.map((teamDoc) => {
+      const team = teamDoc.data();
+      return {
+        id: teamDoc.id,
+        name: cleanText(team.name, teamDoc.id),
+        sport: cleanText(team.sport, "Track and Field"),
+        logoText: cleanText(team.logoText, team.name?.slice(0, 4) || "TEAM").slice(0, 12).toUpperCase()
+      };
+    })
+  };
+});
+
 export const createTeamForCoach = onCall(async (request) => {
   assertSignedIn(request);
   const {

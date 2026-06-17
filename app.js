@@ -111,6 +111,9 @@ const roleCapabilities = {
 
 const roleSelect = document.querySelector("#roleSelect");
 const teamSelect = document.querySelector("#teamSelect");
+const teamSearchInput = document.querySelector("#teamSearchInput");
+const teamOptions = document.querySelector("#teamOptions");
+const teamPickerStatus = document.querySelector("#teamPickerStatus");
 const sidebar = document.querySelector(".sidebar");
 const mobileMenuButton = document.querySelector("#mobileMenuButton");
 const appShell = document.querySelector("#appShell");
@@ -168,6 +171,7 @@ const firebaseReadyChecks = {
   )
 };
 let firebaseLoadTimedOut = false;
+let teamsLoadedFromFirebase = false;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -236,6 +240,10 @@ function currentTenant() {
   };
 }
 
+function teamSearchLabel(tenant) {
+  return [tenant.name, tenant.sport].filter(Boolean).join(" - ");
+}
+
 function firebaseBackend() {
   return window.firebaseBackend || null;
 }
@@ -294,7 +302,8 @@ function updateFirebaseStatus() {
     const tab = form.dataset.authPanel;
     const button = form.querySelector("button[type='submit']");
     if (!button || button.dataset.busy === "true") return;
-    button.disabled = !firebaseReadyChecks[tab]?.(backend);
+    const needsSelectedTeam = tab === "readonly";
+    button.disabled = !firebaseReadyChecks[tab]?.(backend) || (needsSelectedTeam && !state.teamId);
   });
 
   if (activeReady) {
@@ -357,6 +366,7 @@ function setFormBusy(form, isBusy, label = "Working...") {
 }
 
 function registerTenant(team, coachName = "Head Coach") {
+  if (!team?.id) return;
   tenantCatalog[team.id] = {
     id: team.id,
     name: team.name,
@@ -414,11 +424,50 @@ function saveFeatureFlags() {
 
 function populateTeamSelect() {
   if (!teamSelect) return;
-  teamSelect.innerHTML = Object.values(tenantCatalog)
-    .map((tenant) => `<option value="${tenant.id}">${tenant.name}</option>`)
-    .join("");
-  teamSelect.disabled = !Object.keys(tenantCatalog).length;
+  const tenants = Object.values(tenantCatalog).sort((a, b) => a.name.localeCompare(b.name));
+  teamSelect.replaceChildren();
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = teamsLoadedFromFirebase ? "Select a team" : "Loading teams...";
+  teamSelect.append(placeholder);
+
+  tenants.forEach((tenant) => {
+    const option = document.createElement("option");
+    option.value = tenant.id;
+    option.textContent = teamSearchLabel(tenant);
+    teamSelect.append(option);
+  });
+
+  teamSelect.disabled = !tenants.length;
   teamSelect.value = state.teamId;
+
+  if (teamOptions) {
+    teamOptions.replaceChildren();
+    tenants.forEach((tenant) => {
+      const option = document.createElement("option");
+      option.value = teamSearchLabel(tenant);
+      option.dataset.teamId = tenant.id;
+      teamOptions.append(option);
+    });
+  }
+
+  if (teamSearchInput && state.teamId) {
+    teamSearchInput.value = teamSearchLabel(tenantCatalog[state.teamId]);
+  }
+
+  if (teamPickerStatus) {
+    if (!teamsLoadedFromFirebase) {
+      teamPickerStatus.textContent = "Loading teams...";
+    } else if (tenants.length) {
+      teamPickerStatus.textContent = state.teamId
+        ? `${currentTenant().name} selected.`
+        : `${tenants.length} ${tenants.length === 1 ? "team" : "teams"} available.`;
+    } else {
+      teamPickerStatus.textContent = "No teams found yet.";
+    }
+  }
+  updateFirebaseStatus();
 }
 
 function applyFeatureFlags() {
@@ -445,12 +494,67 @@ function setActiveTeam(teamId, options = {}) {
   if (teamSelect) {
     teamSelect.value = state.teamId;
   }
+  if (teamSearchInput) {
+    teamSearchInput.value = state.teamId ? teamSearchLabel(currentTenant()) : "";
+  }
   applyBranding();
   renderAll();
   applyFeatureFlags();
-  tenantNote.textContent = `${currentTenant().name} workspace`;
+  tenantNote.textContent = state.teamId ? `${currentTenant().name} workspace` : "No team selected";
   if (!options.keepAuth) {
     lockApp();
+  }
+}
+
+function selectTeam(teamId, options = {}) {
+  setActiveTeam(teamId, options);
+  if (teamId) {
+    setAuthTab("readonly");
+  }
+  populateTeamSelect();
+}
+
+function matchTeamSearch(value) {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  return Object.values(tenantCatalog).find((tenant) => (
+    tenant.name.toLowerCase() === normalized
+    || tenant.id.toLowerCase() === normalized
+    || teamSearchLabel(tenant).toLowerCase() === normalized
+  )) || null;
+}
+
+async function loadFirebaseTeams() {
+  const backend = await waitForFirebaseBackend((candidate) => typeof candidate?.listTeams === "function", 8000);
+  if (!backend) {
+    if (teamPickerStatus) {
+      teamPickerStatus.textContent = "Teams could not be loaded yet.";
+    }
+    populateTeamSelect();
+    return;
+  }
+
+  try {
+    const teams = await backend.listTeams();
+    teams.forEach((team) => {
+      registerTenant({
+        id: team.id,
+        name: team.name || team.id,
+        sport: team.sport || "Track and Field",
+        logoText: team.logoText || team.name?.slice(0, 4) || "TEAM",
+        features: team.features || {},
+        branding: team.branding || {}
+      });
+    });
+    teamsLoadedFromFirebase = true;
+    populateTeamSelect();
+  } catch (error) {
+    console.warn("Could not load teams from Firebase", error);
+    teamsLoadedFromFirebase = true;
+    if (teamPickerStatus) {
+      teamPickerStatus.textContent = "Team search is unavailable right now.";
+    }
+    populateTeamSelect();
   }
 }
 
@@ -1014,8 +1118,23 @@ document.querySelectorAll("[data-workout-filter]").forEach((button) => {
 roleSelect.addEventListener("change", (event) => setRole(event.target.value));
 
 teamSelect?.addEventListener("change", (event) => {
-  setActiveTeam(event.target.value);
-  setAuthTab(event.target.value ? "readonly" : "signup");
+  selectTeam(event.target.value);
+});
+
+teamSearchInput?.addEventListener("input", (event) => {
+  const team = matchTeamSearch(event.target.value);
+  if (team) {
+    selectTeam(team.id);
+  } else if (!event.target.value.trim()) {
+    selectTeam("", { keepAuth: true });
+  }
+});
+
+teamSearchInput?.addEventListener("change", (event) => {
+  const team = matchTeamSearch(event.target.value);
+  if (team) {
+    selectTeam(team.id);
+  }
 });
 
 document.querySelectorAll("[data-auth-tab]").forEach((button) => {
@@ -1032,7 +1151,7 @@ readonlyForm.addEventListener("submit", async (event) => {
 
   try {
     if (!state.teamId) {
-      showAuthError("Create a team or log in as a coach before using a team password.");
+      showAuthError("Select a team before using a team password.");
       return;
     }
 
@@ -1411,4 +1530,5 @@ setActiveTeam(state.teamId, { keepAuth: true });
 lockApp();
 setAuthTab("signup");
 updateFirebaseStatus();
+loadFirebaseTeams();
 setView(location.hash?.replace("#", "") && pageTitles[location.hash.replace("#", "")] ? location.hash.replace("#", "") : "home");

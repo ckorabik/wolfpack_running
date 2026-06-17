@@ -13,6 +13,12 @@ export async function createTeamForCoach(teamSetup) {
   return result.data;
 }
 
+export async function listTeamsForSignIn() {
+  const callable = httpsCallable(functions, "listTeamsForSignIn");
+  const result = await callable();
+  return result.data?.teams || [];
+}
+
 export async function setTeamMemberRole({ teamId, userId, role, athleteId = null }) {
   const callable = httpsCallable(functions, "setTeamMemberRole");
   const result = await callable({ teamId, userId, role, athleteId });
