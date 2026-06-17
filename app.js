@@ -32,6 +32,7 @@ const tenantDataDefaults = {};
 
 const sessionStorageKey = "packSession";
 const signupDraftStorageKey = "dashboardSignupDraft";
+const teamListEndpoint = "https://us-central1-dash-28cf9.cloudfunctions.net/listTeamsForSignIn";
 
 const featureCatalog = [
   {
@@ -525,17 +526,43 @@ function matchTeamSearch(value) {
 }
 
 async function loadFirebaseTeams() {
-  const backend = await waitForFirebaseBackend((candidate) => typeof candidate?.listTeams === "function", 8000);
-  if (!backend) {
-    if (teamPickerStatus) {
-      teamPickerStatus.textContent = "Teams could not be loaded yet.";
+  try {
+    const backend = await waitForFirebaseBackend((candidate) => typeof candidate?.listTeams === "function", 3500);
+    const teams = backend ? await backend.listTeams() : await fetchTeamsForSignIn();
+    applyTeamList(teams);
+  } catch (error) {
+    console.warn("Firebase team list failed, retrying with direct endpoint", error);
+    try {
+      const teams = await fetchTeamsForSignIn();
+      applyTeamList(teams);
+    } catch (fallbackError) {
+      console.warn("Could not load teams from Firebase", fallbackError);
+      teamsLoadedFromFirebase = true;
+      if (teamPickerStatus) {
+        teamPickerStatus.textContent = "Team search is unavailable right now.";
+      }
+      populateTeamSelect();
     }
-    populateTeamSelect();
-    return;
+  }
+}
+
+async function fetchTeamsForSignIn() {
+  const response = await fetch(teamListEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: {} })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Team list request failed with ${response.status}`);
   }
 
-  try {
-    const teams = await backend.listTeams();
+  const payload = await response.json();
+  return payload?.result?.teams || [];
+}
+
+function applyTeamList(teams) {
+  if (Array.isArray(teams)) {
     teams.forEach((team) => {
       registerTenant({
         id: team.id,
@@ -546,16 +573,9 @@ async function loadFirebaseTeams() {
         branding: team.branding || {}
       });
     });
-    teamsLoadedFromFirebase = true;
-    populateTeamSelect();
-  } catch (error) {
-    console.warn("Could not load teams from Firebase", error);
-    teamsLoadedFromFirebase = true;
-    if (teamPickerStatus) {
-      teamPickerStatus.textContent = "Team search is unavailable right now.";
-    }
-    populateTeamSelect();
   }
+  teamsLoadedFromFirebase = true;
+  populateTeamSelect();
 }
 
 function saveSession(session) {
