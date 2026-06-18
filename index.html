@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=20260618e">
+    <link rel="stylesheet" href="styles.css?v=20260618f">
   </head>
   <body class="auth-locked">
     <section class="auth-screen" id="authScreen" aria-label="Team login">
@@ -25,11 +25,11 @@
         <p class="auth-error" id="authError" role="alert"></p>
         <p class="auth-status" id="authStatus" role="alert"></p>
 
-        <form class="auth-form" id="readonlyForm" data-auth-panel="readonly">
+        <form class="auth-form" id="readonlyForm" data-auth-panel="readonly" autocomplete="off">
           <div class="team-picker" aria-label="Team selection">
             <label for="teamSearchInput">
               Search teams
-              <input id="teamSearchInput" type="search" autocomplete="off" placeholder="Start typing a team name" required aria-controls="teamSearchResults" aria-expanded="false">
+              <input id="teamSearchInput" name="dashboard-team-picker" type="text" inputmode="search" autocomplete="new-password" autocapitalize="none" spellcheck="false" placeholder="Start typing a team name" required aria-autocomplete="list" aria-controls="teamSearchResults" aria-expanded="false">
             </label>
             <div class="team-search-results" id="teamSearchResults" role="listbox"></div>
             <p class="team-picker-status" id="teamPickerStatus" role="status"></p>
@@ -551,12 +551,12 @@
     </script>
     <script type="module">
       try {
-        await import("./src/firebase/browserBridge.js?v=20260618e");
+        await import("./src/firebase/browserBridge.js?v=20260618f");
       } catch (error) {
         window.firebaseBackendLoadError = error;
         window.dispatchEvent(new CustomEvent("firebase-backend-failed", { detail: { error } }));
       }
     </script>
-    <script src="app.js?v=20260618e"></script>
+    <script src="app.js?v=20260618f"></script>
   </body>
 </html>

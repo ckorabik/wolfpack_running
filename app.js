@@ -181,6 +181,13 @@ let firebaseBackendLoadError = null;
 let coachAuthMode = "login";
 let pendingCoachSession = null;
 
+function suppressBrowserAutocomplete(input) {
+  if (!input) return;
+  input.setAttribute("autocomplete", "new-password");
+  input.setAttribute("autocapitalize", "none");
+  input.setAttribute("spellcheck", "false");
+}
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -1521,6 +1528,7 @@ teamSearchInput?.addEventListener("change", (event) => {
 });
 
 teamSearchInput?.addEventListener("focus", (event) => {
+  suppressBrowserAutocomplete(event.target);
   renderTeamSearchResults(event.target.value, true);
 });
 
@@ -1992,6 +2000,7 @@ setTimeout(() => {
 }, 10000);
 
 localStorage.removeItem(sessionStorageKey);
+suppressBrowserAutocomplete(teamSearchInput);
 restoreSignupDraft();
 if (window.firebaseBackendLoadError) {
   firebaseLoadTimedOut = true;

@@ -269,6 +269,8 @@ button {
   display: none;
   max-height: 240px;
   overflow-y: auto;
+  position: relative;
+  z-index: 20;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
