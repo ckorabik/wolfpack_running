@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
 
 initializeApp();
 
@@ -34,8 +35,8 @@ function cleanHex(value, fallback) {
   return /^#[0-9a-f]{6}$/i.test(text) ? text : fallback;
 }
 
-function assertSignedIn(request) {
-  if (!request.auth) {
+function assertSignedIn(auth) {
+  if (!auth) {
     throw new HttpsError("unauthenticated", "You must be signed in.");
   }
 }
@@ -67,8 +68,8 @@ export const listTeamsForSignIn = onCall(async () => {
   };
 });
 
-export const createTeamForCoach = onCall(async (request) => {
-  assertSignedIn(request);
+async function createTeamForCoachSetup(auth, data = {}) {
+  assertSignedIn(auth);
   const {
     coachName: submittedCoachName,
     coachEmail: submittedCoachEmail,
@@ -77,7 +78,7 @@ export const createTeamForCoach = onCall(async (request) => {
     logoText,
     accessCode,
     branding = {}
-  } = request.data || {};
+  } = data;
 
   const name = cleanText(teamName);
   if (name.length < 3) {
@@ -108,8 +109,8 @@ export const createTeamForCoach = onCall(async (request) => {
 
   const now = FieldValue.serverTimestamp();
   const readOnlyPasswordHash = await bcrypt.hash(String(accessCode), 12);
-  const coachName = cleanText(submittedCoachName || request.auth.token.name, "Head Coach");
-  const coachEmail = cleanText(submittedCoachEmail || request.auth.token.email);
+  const coachName = cleanText(submittedCoachName || auth.token.name, "Head Coach");
+  const coachEmail = cleanText(submittedCoachEmail || auth.token.email);
   const safeBranding = {
     teamName: name,
     logoText: cleanText(logoText, name.slice(0, 4)).slice(0, 12).toUpperCase(),
@@ -127,7 +128,7 @@ export const createTeamForCoach = onCall(async (request) => {
     logoText: safeBranding.logoText,
     publicRead: false,
     readOnlyPasswordHash,
-    ownerUid: request.auth.uid,
+    ownerUid: auth.uid,
     createdAt: now,
     updatedAt: now
   });
@@ -142,7 +143,7 @@ export const createTeamForCoach = onCall(async (request) => {
     updatedAt: now
   });
 
-  batch.set(db.doc(`teams/${teamId}/memberships/${request.auth.uid}`), {
+  batch.set(db.doc(`teams/${teamId}/memberships/${auth.uid}`), {
     role: "headCoach",
     athleteId: null,
     displayName: coachName,
@@ -180,7 +181,7 @@ export const createTeamForCoach = onCall(async (request) => {
     updatedAt: now
   });
 
-  batch.set(db.doc(`users/${request.auth.uid}`), {
+  batch.set(db.doc(`users/${auth.uid}`), {
     name: coachName,
     email: coachEmail,
     defaultTeamId: teamId,
@@ -203,10 +204,58 @@ export const createTeamForCoach = onCall(async (request) => {
       branding: safeBranding
     }
   };
+}
+
+export const createTeamForCoach = onCall(async (request) => {
+  return createTeamForCoachSetup(request.auth, request.data || {});
+});
+
+export const createTeamForCoachHttp = onRequest(async (request, response) => {
+  const allowedOrigins = new Set([
+    "https://dash-28cf9.web.app",
+    "https://dash-28cf9.firebaseapp.com",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000"
+  ]);
+  const origin = request.get("origin");
+  if (allowedOrigins.has(origin)) {
+    response.set("Access-Control-Allow-Origin", origin);
+  }
+  response.set("Vary", "Origin");
+  response.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+
+  if (request.method === "OPTIONS") {
+    response.status(204).send("");
+    return;
+  }
+
+  if (request.method !== "POST") {
+    response.status(405).json({ error: { message: "Method not allowed." } });
+    return;
+  }
+
+  try {
+    const token = String(request.get("authorization") || "").replace(/^Bearer\s+/i, "");
+    if (!token) {
+      throw new HttpsError("unauthenticated", "You must be signed in.");
+    }
+    const decoded = await getAuth().verifyIdToken(token);
+    const result = await createTeamForCoachSetup({ uid: decoded.uid, token: decoded }, request.body?.data || {});
+    response.json({ result });
+  } catch (error) {
+    const status = error instanceof HttpsError ? error.httpErrorCode?.status || 500 : 500;
+    response.status(status).json({
+      error: {
+        status: error.code || "internal",
+        message: error.message || "Could not create that team yet."
+      }
+    });
+  }
 });
 
 export const joinTeamWithReadOnlyCode = onCall(async (request) => {
-  assertSignedIn(request);
+  assertSignedIn(request.auth);
   const { teamId, accessCode } = request.data || {};
 
   if (!teamId || !accessCode) {
@@ -240,7 +289,7 @@ export const joinTeamWithReadOnlyCode = onCall(async (request) => {
 });
 
 export const setTeamMemberRole = onCall(async (request) => {
-  assertSignedIn(request);
+  assertSignedIn(request.auth);
   const { teamId, userId, role, athleteId = null } = request.data || {};
 
   if (!teamId || !userId || !allowedRoles.has(role)) {
@@ -259,7 +308,7 @@ export const setTeamMemberRole = onCall(async (request) => {
 });
 
 export const setReadOnlyCode = onCall(async (request) => {
-  assertSignedIn(request);
+  assertSignedIn(request.auth);
   const { teamId, accessCode } = request.data || {};
 
   if (!teamId || !accessCode || accessCode.length < 8) {

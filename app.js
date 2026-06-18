@@ -32,7 +32,11 @@ const tenantDataDefaults = {};
 
 const sessionStorageKey = "packSession";
 const signupDraftStorageKey = "dashboardSignupDraft";
+const firebaseApiKey = "AIzaSyAnhPjzDy173K-chcGEv1Tg6LA8wtJ6GrM";
 const teamListEndpoint = "https://us-central1-dash-28cf9.cloudfunctions.net/listTeamsForSignIn";
+const createTeamEndpoint = "https://us-central1-dash-28cf9.cloudfunctions.net/createTeamForCoachHttp";
+const signUpEndpoint = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseApiKey}`;
+const updateProfileEndpoint = `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${firebaseApiKey}`;
 
 const featureCatalog = [
   {
@@ -304,7 +308,8 @@ function updateFirebaseStatus() {
     const button = form.querySelector("button[type='submit']");
     if (!button || button.dataset.busy === "true") return;
     const needsSelectedTeam = tab === "readonly";
-    button.disabled = !firebaseReadyChecks[tab]?.(backend) || (needsSelectedTeam && !state.teamId);
+    const canSubmitWithoutBridge = tab === "signup";
+    button.disabled = (!canSubmitWithoutBridge && !firebaseReadyChecks[tab]?.(backend)) || (needsSelectedTeam && !state.teamId);
   });
 
   if (firebaseBackendLoadError) {
@@ -561,6 +566,77 @@ async function fetchTeamsForSignIn() {
 
   const payload = await response.json();
   return payload?.result?.teams || [];
+}
+
+async function parseJsonResponse(response, fallbackMessage) {
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload?.error?.message || payload?.error?.status || fallbackMessage;
+    throw new Error(message);
+  }
+  if (payload?.error) {
+    throw new Error(payload.error.message || fallbackMessage);
+  }
+  return payload;
+}
+
+function authRestErrorMessage(error) {
+  const message = String(error?.message || "");
+  if (message.includes("EMAIL_EXISTS")) {
+    return "An account with that email already exists. Use Log In or choose another email.";
+  }
+  if (message.includes("WEAK_PASSWORD")) {
+    return "Use a stronger password with at least 6 characters.";
+  }
+  if (message.includes("INVALID_EMAIL")) {
+    return "Enter a valid email address.";
+  }
+  if (message.includes("OPERATION_NOT_ALLOWED")) {
+    return "Email and password signup is not enabled for this app yet.";
+  }
+  return error?.message || "Could not create that coach account.";
+}
+
+async function createAccountWithRest({ email, password, name }) {
+  try {
+    const created = await fetch(signUpEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    }).then((response) => parseJsonResponse(response, "Could not create that coach account."));
+
+    const updated = await fetch(updateProfileEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: created.idToken, displayName: name, returnSecureToken: true })
+    }).then((response) => parseJsonResponse(response, "Could not finish setting up that coach account."));
+
+    return {
+      uid: updated.localId || created.localId,
+      displayName: updated.displayName || name,
+      email: updated.email || created.email || email,
+      idToken: updated.idToken || created.idToken
+    };
+  } catch (error) {
+    throw new Error(authRestErrorMessage(error));
+  }
+}
+
+async function createTeamWithRest(idToken, teamSetup) {
+  const payload = await fetch(createTeamEndpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${idToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ data: teamSetup })
+  }).then((response) => parseJsonResponse(response, "Could not create that team yet."));
+
+  if (!payload?.result?.teamId || !payload?.result?.team) {
+    throw new Error("The team was created, but the app could not read the setup response.");
+  }
+
+  return payload.result;
 }
 
 function applyTeamList(teams) {
@@ -1261,10 +1337,21 @@ signupForm.addEventListener("submit", async (event) => {
   setFormBusy(signupForm, true, "Creating team...");
 
   try {
+    const teamSetup = {
+      coachName: name,
+      coachEmail: email,
+      teamName,
+      sport,
+      logoText,
+      accessCode,
+      branding
+    };
     const backend = await waitForFirebaseBackend((candidate) => (
       getFirebaseSignup(candidate)
       && typeof candidate?.createTeamForCoach === "function"
-    ));
+    ), 2500);
+    let firebaseUser;
+    let setup;
 
     if (backend) {
       const createAccount = getFirebaseSignup(backend);
@@ -1272,35 +1359,27 @@ signupForm.addEventListener("submit", async (event) => {
         throw new Error("Account services are still starting. Try again in a moment.");
       }
 
-      const firebaseUser = await createAccount({ email, password, name });
-      const setup = await backend.createTeamForCoach({
-        coachName: name,
-        coachEmail: email,
-        teamName,
-        sport,
-        logoText,
-        accessCode,
-        branding
-      });
-
-      registerTenant(setup.team, name);
-      signupForm.reset();
-      clearSignupDraft();
-      clearAuthError();
-      setActiveTeam(setup.teamId, { keepAuth: true });
-      unlockApp({
-        mode: "user",
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || name,
-        email: firebaseUser.email || email,
-        role: "headCoach",
-        teamId: setup.teamId
-      });
-      setView("coach");
-      return;
+      firebaseUser = await createAccount({ email, password, name });
+      setup = await backend.createTeamForCoach(teamSetup);
+    } else {
+      firebaseUser = await createAccountWithRest({ email, password, name });
+      setup = await createTeamWithRest(firebaseUser.idToken, teamSetup);
     }
 
-    showAuthError("Account services are still starting. Try again in a moment.");
+    registerTenant(setup.team, name);
+    signupForm.reset();
+    clearSignupDraft();
+    clearAuthError();
+    setActiveTeam(setup.teamId, { keepAuth: true });
+    unlockApp({
+      mode: "user",
+      uid: firebaseUser.uid,
+      name: firebaseUser.displayName || name,
+      email: firebaseUser.email || email,
+      role: "headCoach",
+      teamId: setup.teamId
+    });
+    setView("coach");
   } catch (error) {
     showAuthError(error.message || "Could not create that team yet. Please try again.");
   } finally {
