@@ -76,58 +76,31 @@
         <p class="auth-status" id="workspaceStatus" role="status"></p>
 
         <section class="workspace-section">
-          <div class="auth-copy">
-            <strong>Your teams</strong>
-            <span>Select an existing team connected to your coach account.</span>
-          </div>
-          <label>
-            Team
-            <select id="coachTeamSelect"></select>
-          </label>
-          <div class="button-row">
-            <button class="primary-button" id="openSelectedTeamButton" type="button">Open Team</button>
-            <button class="secondary-button" id="coachWorkspaceBackButton" type="button">Back</button>
-          </div>
+          <div class="coach-team-grid" id="coachTeamGrid" aria-label="Your teams"></div>
+          <button class="secondary-button" id="coachWorkspaceBackButton" type="button">Back</button>
         </section>
 
-        <form class="workspace-section auth-form active" id="signupForm">
+        <form class="workspace-section auth-form hidden" id="signupForm" aria-hidden="true">
           <div class="auth-copy">
             <strong>Create a team</strong>
-            <span>Name your team workspace and choose the first access code families can use for read-only viewing.</span>
+            <span>Name your team workspace and enter the read-only access code twice.</span>
           </div>
-          <div class="onboarding-grid">
-            <label>
-              Team name
-              <input id="signupTeamNameInput" type="text" autocomplete="organization" placeholder="Central Wolves Track" required maxlength="72">
-            </label>
-            <label>
-              Sport
-              <input id="signupSportInput" type="text" value="Track and Field" required maxlength="48">
-            </label>
-            <label>
-              Logo text
-              <input id="signupLogoTextInput" type="text" placeholder="WOLVES" required maxlength="12">
-            </label>
-            <label>
-              Team access code
-              <input id="signupAccessCodeInput" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
-            </label>
+          <label>
+            Team name
+            <input id="signupTeamNameInput" type="text" autocomplete="organization" placeholder="Central Track" required maxlength="72">
+          </label>
+          <label>
+            Team access code
+            <input id="signupAccessCodeInput" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+          </label>
+          <label>
+            Confirm team access code
+            <input id="signupAccessCodeConfirmInput" type="password" autocomplete="new-password" required minlength="8" placeholder="Re-enter access code">
+          </label>
+          <div class="button-row">
+            <button class="primary-button" type="submit">Create Team</button>
+            <button class="secondary-button" id="cancelCreateTeamButton" type="button">Cancel</button>
           </div>
-          <div class="color-row" aria-label="Team colors">
-            <label>
-              Primary
-              <input id="signupPrimaryInput" type="color" value="#b3261e">
-            </label>
-            <label>
-              Accent
-              <input id="signupAccentInput" type="color" value="#1e6b52">
-            </label>
-            <label>
-              Page
-              <input id="signupSurfaceInput" type="color" value="#f7f4ee">
-            </label>
-          </div>
-          <button class="primary-button" type="submit">Create Team</button>
         </form>
       </div>
     </section>
@@ -578,12 +551,12 @@
     </script>
     <script type="module">
       try {
-        await import("./src/firebase/browserBridge.js?v=20260618b");
+        await import("./src/firebase/browserBridge.js?v=20260618c");
       } catch (error) {
         window.firebaseBackendLoadError = error;
         window.dispatchEvent(new CustomEvent("firebase-backend-failed", { detail: { error } }));
       }
     </script>
-    <script src="app.js?v=20260618b"></script>
+    <script src="app.js?v=20260618c"></script>
   </body>
 </html>

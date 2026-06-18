@@ -84,12 +84,8 @@ const brandingDefaults = {
 
 const signupDraftFields = [
   "signupTeamNameInput",
-  "signupSportInput",
-  "signupLogoTextInput",
   "signupAccessCodeInput",
-  "signupPrimaryInput",
-  "signupAccentInput",
-  "signupSurfaceInput"
+  "signupAccessCodeConfirmInput"
 ];
 
 const pageTitles = {
@@ -120,9 +116,9 @@ const teamOptions = document.querySelector("#teamOptions");
 const teamPickerStatus = document.querySelector("#teamPickerStatus");
 const authCard = document.querySelector(".auth-card");
 const coachWorkspaceScreen = document.querySelector("#coachWorkspaceScreen");
-const coachTeamSelect = document.querySelector("#coachTeamSelect");
-const openSelectedTeamButton = document.querySelector("#openSelectedTeamButton");
+const coachTeamGrid = document.querySelector("#coachTeamGrid");
 const coachWorkspaceBackButton = document.querySelector("#coachWorkspaceBackButton");
+const cancelCreateTeamButton = document.querySelector("#cancelCreateTeamButton");
 const workspaceError = document.querySelector("#workspaceError");
 const workspaceStatus = document.querySelector("#workspaceStatus");
 const coachAuthModeToggle = document.querySelector("#coachAuthModeToggle");
@@ -836,28 +832,54 @@ function setCoachAuthMode(mode) {
   updateFirebaseStatus();
 }
 
-function populateCoachTeamSelect(teams = []) {
-  if (!coachTeamSelect) return;
-  coachTeamSelect.replaceChildren();
+function setCreateTeamFormVisible(isVisible) {
+  signupForm.classList.toggle("hidden", !isVisible);
+  signupForm.classList.toggle("active", isVisible);
+  signupForm.setAttribute("aria-hidden", isVisible ? "false" : "true");
+  if (isVisible) {
+    document.querySelector("#signupTeamNameInput")?.focus();
+  } else {
+    clearWorkspaceError();
+  }
+}
 
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = teams.length ? "Select one of your teams" : "No teams found yet";
-  coachTeamSelect.append(placeholder);
+function populateCoachTeamTiles(teams = []) {
+  if (!coachTeamGrid) return;
+  coachTeamGrid.replaceChildren();
 
   teams.forEach((entry) => {
     const team = entry.team || entry;
     if (!team?.id) return;
     registerTenant(team, pendingCoachSession?.user?.displayName || pendingCoachSession?.user?.email || "Head Coach");
-    const option = document.createElement("option");
-    option.value = team.id;
-    option.textContent = teamSearchLabel(tenantCatalog[team.id]);
-    option.dataset.role = entry.role || "headCoach";
-    coachTeamSelect.append(option);
+    const tenant = tenantCatalog[team.id];
+    const tile = document.createElement("button");
+    tile.className = "coach-team-tile";
+    tile.type = "button";
+    tile.dataset.teamId = team.id;
+    const logo = document.createElement("span");
+    logo.className = "team-logo";
+    logo.textContent = tenant.logoText || "TEAM";
+    const name = document.createElement("strong");
+    name.textContent = tenant.name;
+    const sport = document.createElement("small");
+    sport.textContent = tenant.sport || "Track and Field";
+    tile.append(logo, name, sport);
+    coachTeamGrid.append(tile);
   });
 
-  coachTeamSelect.disabled = !teams.length;
-  openSelectedTeamButton.disabled = true;
+  const createTile = document.createElement("button");
+  createTile.className = "coach-team-tile create-team-tile";
+  createTile.type = "button";
+  createTile.dataset.createTeam = "true";
+  createTile.setAttribute("aria-label", "Create team");
+  const plus = document.createElement("span");
+  plus.className = "create-team-plus";
+  plus.setAttribute("aria-hidden", "true");
+  plus.textContent = "+";
+  const label = document.createElement("strong");
+  label.textContent = "Create team";
+  createTile.append(plus, label);
+  coachTeamGrid.append(createTile);
 }
 
 async function loadCoachTeamsForWorkspace() {
@@ -875,12 +897,12 @@ async function loadCoachTeamsForWorkspace() {
     }
 
     pendingCoachSession.teams = teams;
-    populateCoachTeamSelect(teams);
+    populateCoachTeamTiles(teams);
     setWorkspaceStatus(teams.length ? "Choose a team or create a new one." : "Create your first team to continue.", "ready");
   } catch (error) {
     console.warn("Could not load coach teams", error);
     pendingCoachSession.teams = [];
-    populateCoachTeamSelect([]);
+    populateCoachTeamTiles([]);
     setWorkspaceStatus("Create a team to continue.", "ready");
   }
 }
@@ -893,6 +915,7 @@ async function showCoachWorkspace(user, backend = null) {
   authCard.setAttribute("aria-hidden", "true");
   coachWorkspaceScreen.classList.remove("hidden");
   coachWorkspaceScreen.removeAttribute("aria-hidden");
+  setCreateTeamFormVisible(false);
   await loadCoachTeamsForWorkspace();
 }
 
@@ -1463,11 +1486,17 @@ coachWorkspaceBackButton?.addEventListener("click", async () => {
   setAuthTab("login");
 });
 
-openSelectedTeamButton?.addEventListener("click", async () => {
-  const teamId = coachTeamSelect?.value;
-  openSelectedTeamButton.disabled = true;
-  openSelectedTeamButton.dataset.originalText = openSelectedTeamButton.textContent;
-  openSelectedTeamButton.textContent = "Opening...";
+coachTeamGrid?.addEventListener("click", async (event) => {
+  const tile = event.target.closest(".coach-team-tile");
+  if (!tile) return;
+
+  if (tile.dataset.createTeam === "true") {
+    setCreateTeamFormVisible(true);
+    return;
+  }
+
+  const teamId = tile.dataset.teamId;
+  tile.disabled = true;
   clearWorkspaceError();
 
   try {
@@ -1475,14 +1504,14 @@ openSelectedTeamButton?.addEventListener("click", async () => {
   } catch (error) {
     showWorkspaceError(firebaseErrorMessage(error, "Could not open that team yet."));
   } finally {
-    openSelectedTeamButton.textContent = openSelectedTeamButton.dataset.originalText || "Open Team";
-    delete openSelectedTeamButton.dataset.originalText;
-    openSelectedTeamButton.disabled = !coachTeamSelect?.value;
+    tile.disabled = false;
   }
 });
 
-coachTeamSelect?.addEventListener("change", () => {
-  openSelectedTeamButton.disabled = !coachTeamSelect.value;
+cancelCreateTeamButton?.addEventListener("click", () => {
+  signupForm.reset();
+  clearSignupDraft();
+  setCreateTeamFormVisible(false);
 });
 
 signupForm.addEventListener("input", saveSignupDraft);
@@ -1564,13 +1593,18 @@ loginForm.addEventListener("submit", async (event) => {
 signupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const teamName = document.querySelector("#signupTeamNameInput").value.trim();
-  const sport = document.querySelector("#signupSportInput").value.trim();
-  const logoText = document.querySelector("#signupLogoTextInput").value.trim();
   const accessCode = document.querySelector("#signupAccessCodeInput").value;
+  const accessCodeConfirm = document.querySelector("#signupAccessCodeConfirmInput").value;
+  const logoText = teamName
+    .split(/\s+/)
+    .map((word) => word[0] || "")
+    .join("")
+    .slice(0, 5)
+    .toUpperCase() || teamName.slice(0, 5).toUpperCase();
   const branding = {
-    primary: document.querySelector("#signupPrimaryInput").value,
-    accent: document.querySelector("#signupAccentInput").value,
-    surface: document.querySelector("#signupSurfaceInput").value
+    primary: brandingDefaults.primary,
+    accent: brandingDefaults.accent,
+    surface: brandingDefaults.surface
   };
   setFormBusy(signupForm, true, "Creating team...");
   clearWorkspaceError();
@@ -1579,13 +1613,16 @@ signupForm.addEventListener("submit", async (event) => {
     if (!pendingCoachSession?.user) {
       throw new Error("Sign in as a coach before creating a team.");
     }
+    if (accessCode !== accessCodeConfirm) {
+      throw new Error("The team access codes do not match.");
+    }
 
     const { user, backend } = pendingCoachSession;
     const teamSetup = {
       coachName: user.displayName || user.email || "Head Coach",
       coachEmail: user.email || "",
       teamName,
-      sport,
+      sport: "Track and Field",
       logoText,
       accessCode,
       branding

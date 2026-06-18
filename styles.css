@@ -147,24 +147,65 @@ button {
   padding-top: 2px;
 }
 
-.onboarding-grid,
-.color-row {
+.coach-team-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 12px;
 }
 
-.onboarding-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.coach-team-tile {
+  min-height: 138px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(42, 34, 29, 0.08);
 }
 
-.color-row {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.coach-team-tile:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
 }
 
-.color-row input[type="color"] {
-  width: 100%;
-  min-height: 42px;
-  padding: 4px;
+.coach-team-tile .team-logo {
+  color: #fff;
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.coach-team-tile strong,
+.coach-team-tile small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.coach-team-tile small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.create-team-tile {
+  border-style: dashed;
+  color: var(--primary);
+  background: var(--surface);
+}
+
+.create-team-plus {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .auth-error {
@@ -1083,8 +1124,6 @@ dialog::backdrop {
   }
 
   .auth-tabs,
-  .onboarding-grid,
-  .color-row,
   .card-grid,
   .resource-grid,
   .level-grid,
