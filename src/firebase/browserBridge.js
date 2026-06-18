@@ -14,8 +14,8 @@ import {
   listTeamsForSignIn,
   setReadOnlyCode,
   setTeamMemberRole
-} from "./functionService.js";
-import { getTeam } from "./teamRepository.js";
+} from "./functionService.js?v=20260618b";
+import { getTeam } from "./teamRepository.js?v=20260618b";
 
 globalThis.firebaseBackend = Object.assign(globalThis.firebaseBackend || {}, {
   createTeamForCoach,
@@ -34,7 +34,7 @@ globalThis.firebaseBackend = Object.assign(globalThis.firebaseBackend || {}, {
   Signup: signUp,
   signup: signUp,
   signUp,
-  version: "20260618a"
+  version: "20260618b"
 });
 
 globalThis.dispatchEvent(new CustomEvent("firebase-backend-ready"));

@@ -578,12 +578,12 @@
     </script>
     <script type="module">
       try {
-        await import("./src/firebase/browserBridge.js?v=20260618a");
+        await import("./src/firebase/browserBridge.js?v=20260618b");
       } catch (error) {
         window.firebaseBackendLoadError = error;
         window.dispatchEvent(new CustomEvent("firebase-backend-failed", { detail: { error } }));
       }
     </script>
-    <script src="app.js?v=20260618a"></script>
+    <script src="app.js?v=20260618b"></script>
   </body>
 </html>
