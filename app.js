@@ -572,11 +572,13 @@ async function fetchTeamsForSignIn() {
 async function parseJsonResponse(response, fallbackMessage) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = payload?.error?.message || payload?.error?.status || fallbackMessage;
+    const rawMessage = payload?.error?.message || payload?.error?.status;
+    const message = rawMessage && rawMessage !== "internal" ? rawMessage : fallbackMessage;
     throw new Error(message);
   }
   if (payload?.error) {
-    throw new Error(payload.error.message || fallbackMessage);
+    const rawMessage = payload.error.message || payload.error.status;
+    throw new Error(rawMessage && rawMessage !== "internal" ? rawMessage : fallbackMessage);
   }
   return payload;
 }
@@ -765,7 +767,7 @@ function firebaseErrorMessage(error, fallback) {
   if (code.includes("permission-denied")) {
     return "This account cannot open that team workspace.";
   }
-  return error?.message || fallback;
+  return message && message !== "internal" ? message : fallback;
 }
 
 async function registerFirebaseTeam(backend, teamId) {
@@ -1629,11 +1631,17 @@ signupForm.addEventListener("submit", async (event) => {
     };
     let setup;
 
-    if (typeof backend?.createTeamForCoach === "function") {
-      setup = await backend.createTeamForCoach(teamSetup);
-    } else {
+    try {
       const idToken = await getFirebaseIdToken(user);
+      if (!idToken) {
+        throw new Error("Account services are still starting. Try again in a moment.");
+      }
       setup = await createTeamWithRest(idToken, teamSetup);
+    } catch (restError) {
+      if (typeof backend?.createTeamForCoach !== "function") {
+        throw restError;
+      }
+      setup = await backend.createTeamForCoach(teamSetup);
     }
 
     registerTenant(setup.team, user.displayName || user.email || "Head Coach");

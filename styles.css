@@ -149,12 +149,14 @@ button {
 
 .coach-team-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(132px, 160px));
   gap: 12px;
+  justify-content: center;
 }
 
 .coach-team-tile {
-  min-height: 138px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
   align-content: center;
@@ -174,6 +176,8 @@ button {
 }
 
 .coach-team-tile .team-logo {
+  width: 62px;
+  height: 62px;
   color: #fff;
   border-color: var(--primary);
   background: var(--primary);

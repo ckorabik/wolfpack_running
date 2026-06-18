@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260618d">
   </head>
   <body class="auth-locked">
     <section class="auth-screen" id="authScreen" aria-label="Team login">
@@ -551,12 +551,12 @@
     </script>
     <script type="module">
       try {
-        await import("./src/firebase/browserBridge.js?v=20260618c");
+        await import("./src/firebase/browserBridge.js?v=20260618d");
       } catch (error) {
         window.firebaseBackendLoadError = error;
         window.dispatchEvent(new CustomEvent("firebase-backend-failed", { detail: { error } }));
       }
     </script>
-    <script src="app.js?v=20260618c"></script>
+    <script src="app.js?v=20260618d"></script>
   </body>
 </html>
