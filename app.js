@@ -112,7 +112,7 @@ const roleCapabilities = {
 const roleSelect = document.querySelector("#roleSelect");
 const teamSelect = document.querySelector("#teamSelect");
 const teamSearchInput = document.querySelector("#teamSearchInput");
-const teamOptions = document.querySelector("#teamOptions");
+const teamSearchResults = document.querySelector("#teamSearchResults");
 const teamPickerStatus = document.querySelector("#teamPickerStatus");
 const authCard = document.querySelector(".auth-card");
 const coachWorkspaceScreen = document.querySelector("#coachWorkspaceScreen");
@@ -250,6 +250,24 @@ function currentTenant() {
 
 function teamSearchLabel(tenant) {
   return [tenant.name, tenant.sport].filter(Boolean).join(" - ");
+}
+
+function sortedTenants() {
+  return Object.values(tenantCatalog).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function filterTenants(query) {
+  const normalized = query.trim().toLowerCase();
+  const tenants = sortedTenants();
+  if (!normalized) {
+    return tenants.slice(0, 8);
+  }
+  return tenants.filter((tenant) => (
+    tenant.name.toLowerCase().includes(normalized)
+    || tenant.id.toLowerCase().includes(normalized)
+    || teamSearchLabel(tenant).toLowerCase().includes(normalized)
+    || (tenant.logoText || "").toLowerCase().includes(normalized)
+  )).slice(0, 8);
 }
 
 function firebaseBackend() {
@@ -428,7 +446,7 @@ function saveFeatureFlags() {
 }
 
 function populateTeamSelect() {
-  const tenants = Object.values(tenantCatalog).sort((a, b) => a.name.localeCompare(b.name));
+  const tenants = sortedTenants();
 
   if (teamSelect) {
     teamSelect.replaceChildren();
@@ -449,21 +467,12 @@ function populateTeamSelect() {
     teamSelect.value = state.teamId;
   }
 
-  if (teamOptions) {
-    teamOptions.replaceChildren();
-    tenants.forEach((tenant) => {
-      const option = document.createElement("option");
-      option.value = teamSearchLabel(tenant);
-      option.dataset.teamId = tenant.id;
-      teamOptions.append(option);
-    });
-  }
-
   if (teamSearchInput) {
     teamSearchInput.disabled = !tenants.length;
     if (state.teamId) {
       teamSearchInput.value = teamSearchLabel(tenantCatalog[state.teamId]);
     }
+    renderTeamSearchResults(teamSearchInput.value, false);
   }
 
   if (teamPickerStatus) {
@@ -475,6 +484,52 @@ function populateTeamSelect() {
       teamPickerStatus.classList.remove("visible");
     }
   }
+  updateFirebaseStatus();
+}
+
+function renderTeamSearchResults(query = "", isOpen = true) {
+  if (!teamSearchResults || !teamSearchInput) return;
+  const tenants = filterTenants(query);
+  teamSearchResults.replaceChildren();
+  const showResults = isOpen && (tenants.length > 0 || query.trim());
+  teamSearchInput.setAttribute("aria-expanded", showResults ? "true" : "false");
+  teamSearchResults.classList.toggle("visible", showResults);
+
+  if (showResults && !tenants.length) {
+    const empty = document.createElement("p");
+    empty.className = "team-search-empty";
+    empty.textContent = "No teams found.";
+    teamSearchResults.append(empty);
+    return;
+  }
+
+  tenants.forEach((tenant) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "team-search-option";
+    option.dataset.teamId = tenant.id;
+
+    const logo = document.createElement("span");
+    logo.className = "team-search-logo";
+    logo.textContent = tenant.logoText || "TEAM";
+
+    const text = document.createElement("span");
+    const name = document.createElement("strong");
+    name.textContent = tenant.name;
+    const meta = document.createElement("small");
+    meta.textContent = tenant.sport || "Track and Field";
+    text.append(name, meta);
+
+    option.append(logo, text);
+    teamSearchResults.append(option);
+  });
+}
+
+function clearSelectedTeamForSearch() {
+  if (!state.teamId) return;
+  state.teamId = "";
+  state.features = loadFeatureFlags("");
+  tenantNote.textContent = "No team selected";
   updateFirebaseStatus();
 }
 
@@ -1453,20 +1508,43 @@ teamSelect?.addEventListener("change", (event) => {
 });
 
 teamSearchInput?.addEventListener("input", (event) => {
-  const team = matchTeamSearch(event.target.value);
-  if (team) {
-    selectTeam(team.id);
-  } else {
-    selectTeam("", { keepAuth: true });
-  }
+  clearSelectedTeamForSearch();
+  renderTeamSearchResults(event.target.value, true);
 });
 
 teamSearchInput?.addEventListener("change", (event) => {
   const team = matchTeamSearch(event.target.value);
   if (team) {
     selectTeam(team.id);
-  } else {
-    selectTeam("", { keepAuth: true });
+    renderTeamSearchResults(event.target.value, false);
+  }
+});
+
+teamSearchInput?.addEventListener("focus", (event) => {
+  renderTeamSearchResults(event.target.value, true);
+});
+
+teamSearchInput?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  const [firstMatch] = filterTenants(event.currentTarget.value);
+  if (!firstMatch) return;
+  event.preventDefault();
+  selectTeam(firstMatch.id);
+  renderTeamSearchResults(teamSearchLabel(firstMatch), false);
+  document.querySelector("#teamPasswordInput")?.focus();
+});
+
+teamSearchResults?.addEventListener("click", (event) => {
+  const option = event.target.closest(".team-search-option");
+  if (!option?.dataset.teamId) return;
+  selectTeam(option.dataset.teamId);
+  renderTeamSearchResults(teamSearchInput.value, false);
+  document.querySelector("#teamPasswordInput")?.focus();
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".team-picker")) {
+    renderTeamSearchResults(teamSearchInput?.value || "", false);
   }
 });
 
