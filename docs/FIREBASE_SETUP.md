@@ -2,7 +2,7 @@
 
 This project now has Firebase scaffolding for Auth, Firestore, Storage, Hosting, Cloud Functions, security rules, and indexes.
 
-The current app can still run as a static local prototype. The login, read-only access, and new-coach team setup screens now call Firebase when the app is served in a browser with your Firebase config present.
+The current app can still run as a static local prototype. The login, read-only access, and new-coach team setup screens now call Firebase from the deployed browser app.
 
 ## 1. Create Or Choose A Firebase Project
 
@@ -43,17 +43,19 @@ Edit `.firebaserc`:
 }
 ```
 
-## 4. Add Your Firebase Web Config
+## 4. Firebase Web Config
 
-Copy:
+The deployed app has the public `dash-28cf9` Firebase web config in `src/firebase/client.js` so GitHub Pages and Firebase Hosting can load account services without a private local file.
+
+For local experiments against a different Firebase project, copy:
 
 ```bash
 cp src/firebase/firebaseConfig.example.js src/firebase/firebaseConfig.js
 ```
 
-Replace the placeholder values in `src/firebase/firebaseConfig.js` with the config from your Firebase Web App.
+Replace the placeholder values in `src/firebase/firebaseConfig.js` with the config from that Firebase Web App, then expose it as `globalThis.DASHBOARD_FIREBASE_CONFIG` before `src/firebase/client.js` loads.
 
-Do not commit `src/firebase/firebaseConfig.js`. It is ignored because it is environment-specific. Firebase web config is not a server secret, but keeping environment files local prevents accidental project mixups.
+Do not commit `src/firebase/firebaseConfig.js`. It is ignored because it is environment-specific. Firebase web config is not a server secret, but keeping override files local prevents accidental project mixups.
 
 ## 5. Enable Firebase Products
 

@@ -16,7 +16,16 @@ import {
   connectFunctionsEmulator,
   getFunctions
 } from "firebase/functions";
-import { firebaseConfig } from "./firebaseConfig.js";
+
+const firebaseConfig = globalThis.DASHBOARD_FIREBASE_CONFIG || {
+  apiKey: "AIzaSyAnhPjzDy173K-chcGEv1Tg6LA8wtJ6GrM",
+  authDomain: "dash-28cf9.firebaseapp.com",
+  projectId: "dash-28cf9",
+  storageBucket: "dash-28cf9.firebasestorage.app",
+  messagingSenderId: "1042244919456",
+  appId: "1:1042244919456:web:4f13a6a4fac1d1b3e6e9c5",
+  measurementId: "G-KRMBGCYZ10"
+};
 
 const app = initializeApp(firebaseConfig);
 
