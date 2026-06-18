@@ -289,6 +289,7 @@ function currentAuthTab() {
 function setAuthStatus(message, stateName = "loading") {
   if (!authStatus) return;
   authStatus.textContent = message;
+  authStatus.classList.toggle("visible", Boolean(message));
   authStatus.classList.toggle("loading", stateName === "loading");
   authStatus.classList.toggle("ready", stateName === "ready");
   authStatus.classList.toggle("error", stateName === "error");
@@ -297,8 +298,6 @@ function setAuthStatus(message, stateName = "loading") {
 function updateFirebaseStatus() {
   const backend = firebaseBackend();
   const currentTab = currentAuthTab();
-  const activeReady = Boolean(firebaseReadyChecks[currentTab]?.(backend));
-  const anyReady = Object.values(firebaseReadyChecks).some((isReady) => Boolean(isReady(backend)));
 
   authForms.forEach((form) => {
     const tab = form.dataset.authPanel;
@@ -308,16 +307,10 @@ function updateFirebaseStatus() {
     button.disabled = !firebaseReadyChecks[tab]?.(backend) || (needsSelectedTeam && !state.teamId);
   });
 
-  if (activeReady) {
-    setAuthStatus("Firebase is ready.", "ready");
-  } else if (firebaseBackendLoadError) {
-    setAuthStatus(`Firebase account services could not load: ${firebaseBackendLoadError.message}`, "error");
-  } else if (teamsLoadedFromFirebase) {
-    setAuthStatus("Team search is connected. Account sign-in is still loading.", "loading");
-  } else if (firebaseLoadTimedOut && !anyReady) {
-    setAuthStatus("Firebase account services are still loading. Team search will keep trying.", "loading");
+  if (firebaseBackendLoadError) {
+    setAuthStatus(`Account services could not load: ${firebaseBackendLoadError.message}`, "error");
   } else {
-    setAuthStatus("Connecting to Firebase...", "loading");
+    setAuthStatus("");
   }
 }
 
@@ -468,14 +461,12 @@ function populateTeamSelect() {
   }
 
   if (teamPickerStatus) {
-    if (!teamsLoadedFromFirebase) {
-      teamPickerStatus.textContent = "Loading teams...";
-    } else if (tenants.length) {
-      teamPickerStatus.textContent = state.teamId
-        ? `${currentTenant().name} selected.`
-        : `${tenants.length} ${tenants.length === 1 ? "team" : "teams"} available.`;
-    } else {
+    if (teamsLoadedFromFirebase && !tenants.length) {
       teamPickerStatus.textContent = "No teams found yet.";
+      teamPickerStatus.classList.add("visible");
+    } else {
+      teamPickerStatus.textContent = "";
+      teamPickerStatus.classList.remove("visible");
     }
   }
   updateFirebaseStatus();
@@ -550,6 +541,7 @@ async function loadFirebaseTeams() {
       teamsLoadedFromFirebase = true;
       if (teamPickerStatus) {
         teamPickerStatus.textContent = "Team search is unavailable right now.";
+        teamPickerStatus.classList.add("visible");
       }
       populateTeamSelect();
     }
@@ -620,7 +612,7 @@ function firebaseErrorMessage(error, fallback) {
     return "That team password did not match.";
   }
   if (code.includes("permission-denied")) {
-    return "Firebase blocked this account from opening that team workspace.";
+    return "This account cannot open that team workspace.";
   }
   return error?.message || fallback;
 }
@@ -1202,7 +1194,7 @@ readonlyForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    showAuthError("Firebase is still connecting. Wait for the ready message, then try again.");
+    showAuthError("Account services are still starting. Try again in a moment.");
   } catch (error) {
     showAuthError(firebaseErrorMessage(error, "That team password did not match."));
   } finally {
@@ -1244,7 +1236,7 @@ loginForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    showAuthError("Firebase is still connecting. Wait for the ready message, then try again.");
+    showAuthError("Account services are still starting. Try again in a moment.");
   } catch (error) {
     showAuthError(firebaseErrorMessage(error, "No account matched that email and password."));
   } finally {
@@ -1277,7 +1269,7 @@ signupForm.addEventListener("submit", async (event) => {
     if (backend) {
       const createAccount = getFirebaseSignup(backend);
       if (!createAccount) {
-        throw new Error("Firebase signup is still connecting. Wait for the ready message, then try again.");
+        throw new Error("Account services are still starting. Try again in a moment.");
       }
 
       const firebaseUser = await createAccount({ email, password, name });
@@ -1308,7 +1300,7 @@ signupForm.addEventListener("submit", async (event) => {
       return;
     }
 
-    showAuthError("Firebase is still connecting. Wait for the ready message, then try again.");
+    showAuthError("Account services are still starting. Try again in a moment.");
   } catch (error) {
     showAuthError(error.message || "Could not create that team yet. Please try again.");
   } finally {
@@ -1554,7 +1546,7 @@ window.addEventListener("firebase-backend-ready", () => {
 
 window.addEventListener("firebase-backend-failed", (event) => {
   firebaseLoadTimedOut = true;
-  firebaseBackendLoadError = event.detail?.error || new Error("The Firebase browser module did not load.");
+  firebaseBackendLoadError = event.detail?.error || new Error("Account services did not load.");
   updateFirebaseStatus();
 });
 

@@ -24,7 +24,7 @@
         </div>
 
         <p class="auth-error" id="authError" role="alert"></p>
-        <p class="auth-status loading" id="authStatus" role="status">Connecting to Firebase...</p>
+        <p class="auth-status" id="authStatus" role="alert"></p>
 
         <form class="auth-form" id="readonlyForm" data-auth-panel="readonly">
           <div class="team-picker" aria-label="Team selection">
@@ -33,7 +33,7 @@
               <input id="teamSearchInput" type="search" list="teamOptions" autocomplete="organization" placeholder="Start typing a team name" required>
             </label>
             <datalist id="teamOptions"></datalist>
-            <p class="team-picker-status" id="teamPickerStatus" role="status">Loading teams...</p>
+            <p class="team-picker-status" id="teamPickerStatus" role="status"></p>
           </div>
           <label>
             Team password
@@ -554,12 +554,12 @@
     </script>
     <script type="module">
       try {
-        await import("./src/firebase/browserBridge.js?v=20260617g");
+        await import("./src/firebase/browserBridge.js?v=20260617h");
       } catch (error) {
         window.firebaseBackendLoadError = error;
         window.dispatchEvent(new CustomEvent("firebase-backend-failed", { detail: { error } }));
       }
     </script>
-    <script src="app.js?v=20260617g"></script>
+    <script src="app.js?v=20260617h"></script>
   </body>
 </html>
