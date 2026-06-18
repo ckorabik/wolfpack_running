@@ -34,8 +34,10 @@ const sessionStorageKey = "packSession";
 const signupDraftStorageKey = "dashboardSignupDraft";
 const firebaseApiKey = "AIzaSyAnhPjzDy173K-chcGEv1Tg6LA8wtJ6GrM";
 const teamListEndpoint = "https://us-central1-dash-28cf9.cloudfunctions.net/listTeamsForSignIn";
+const coachTeamListEndpoint = "https://us-central1-dash-28cf9.cloudfunctions.net/listTeamsForCoachHttp";
 const createTeamEndpoint = "https://us-central1-dash-28cf9.cloudfunctions.net/createTeamForCoachHttp";
 const signUpEndpoint = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseApiKey}`;
+const signInEndpoint = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`;
 const updateProfileEndpoint = `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${firebaseApiKey}`;
 
 const featureCatalog = [
@@ -81,9 +83,6 @@ const brandingDefaults = {
 };
 
 const signupDraftFields = [
-  "signupNameInput",
-  "signupEmailInput",
-  "signupPasswordInput",
   "signupTeamNameInput",
   "signupSportInput",
   "signupLogoTextInput",
@@ -119,6 +118,18 @@ const teamSelect = document.querySelector("#teamSelect");
 const teamSearchInput = document.querySelector("#teamSearchInput");
 const teamOptions = document.querySelector("#teamOptions");
 const teamPickerStatus = document.querySelector("#teamPickerStatus");
+const authCard = document.querySelector(".auth-card");
+const coachWorkspaceScreen = document.querySelector("#coachWorkspaceScreen");
+const coachTeamSelect = document.querySelector("#coachTeamSelect");
+const openSelectedTeamButton = document.querySelector("#openSelectedTeamButton");
+const coachWorkspaceBackButton = document.querySelector("#coachWorkspaceBackButton");
+const workspaceError = document.querySelector("#workspaceError");
+const workspaceStatus = document.querySelector("#workspaceStatus");
+const coachAuthModeToggle = document.querySelector("#coachAuthModeToggle");
+const coachAuthHeading = document.querySelector("#coachAuthHeading");
+const coachAuthCopy = document.querySelector("#coachAuthCopy");
+const coachAuthSubmit = document.querySelector("#coachAuthSubmit");
+const coachSignupOnlyFields = document.querySelectorAll(".coach-signup-only");
 const sidebar = document.querySelector(".sidebar");
 const mobileMenuButton = document.querySelector("#mobileMenuButton");
 const appShell = document.querySelector("#appShell");
@@ -160,24 +171,19 @@ const messageInput = document.querySelector("#messageInput");
 const composeDialog = document.querySelector("#composeDialog");
 const composeForm = document.querySelector("#composeForm");
 const brandingForm = document.querySelector("#brandingForm");
-const authForms = [readonlyForm, loginForm, signupForm];
+const authForms = [readonlyForm, loginForm];
 const firebaseReadyChecks = {
   readonly: (backend) => (
     typeof backend?.signInGuest === "function"
     && typeof backend?.joinTeamWithReadOnlyCode === "function"
   ),
-  login: (backend) => (
-    typeof backend?.signIn === "function"
-    && typeof backend?.getMembership === "function"
-  ),
-  signup: (backend) => (
-    getFirebaseSignup(backend)
-    && typeof backend?.createTeamForCoach === "function"
-  )
+  login: () => true
 };
 let firebaseLoadTimedOut = false;
 let teamsLoadedFromFirebase = false;
 let firebaseBackendLoadError = null;
+let coachAuthMode = "login";
+let pendingCoachSession = null;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -287,7 +293,7 @@ function getFirebaseSignup(backend) {
 }
 
 function currentAuthTab() {
-  return document.querySelector("[data-auth-tab].active")?.dataset.authTab || "signup";
+  return document.querySelector("[data-auth-tab].active")?.dataset.authTab || "readonly";
 }
 
 function setAuthStatus(message, stateName = "loading") {
@@ -308,8 +314,7 @@ function updateFirebaseStatus() {
     const button = form.querySelector("button[type='submit']");
     if (!button || button.dataset.busy === "true") return;
     const needsSelectedTeam = tab === "readonly";
-    const canSubmitWithoutBridge = tab === "signup";
-    button.disabled = (!canSubmitWithoutBridge && !firebaseReadyChecks[tab]?.(backend)) || (needsSelectedTeam && !state.teamId);
+    button.disabled = (!firebaseReadyChecks[tab]?.(backend)) || (needsSelectedTeam && !state.teamId);
   });
 
   if (firebaseBackendLoadError) {
@@ -622,6 +627,29 @@ async function createAccountWithRest({ email, password, name }) {
   }
 }
 
+async function signInWithRest({ email, password }) {
+  const signedIn = await fetch(signInEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, returnSecureToken: true })
+  }).then((response) => parseJsonResponse(response, "No account matched that email and password."));
+
+  return {
+    uid: signedIn.localId,
+    displayName: signedIn.displayName || signedIn.email,
+    email: signedIn.email || email,
+    idToken: signedIn.idToken
+  };
+}
+
+async function getFirebaseIdToken(user) {
+  if (user?.idToken) return user.idToken;
+  if (typeof user?.getIdToken === "function") {
+    return user.getIdToken();
+  }
+  return "";
+}
+
 async function createTeamWithRest(idToken, teamSetup) {
   const payload = await fetch(createTeamEndpoint, {
     method: "POST",
@@ -637,6 +665,19 @@ async function createTeamWithRest(idToken, teamSetup) {
   }
 
   return payload.result;
+}
+
+async function fetchCoachTeamsWithRest(idToken) {
+  const payload = await fetch(coachTeamListEndpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${idToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ data: {} })
+  }).then((response) => parseJsonResponse(response, "Could not load your teams."));
+
+  return payload?.result?.teams || [];
 }
 
 function applyTeamList(teams) {
@@ -676,16 +717,54 @@ function showAuthError(message) {
   authError.classList.add("visible");
 }
 
+function clearWorkspaceError() {
+  if (!workspaceError) return;
+  workspaceError.textContent = "";
+  workspaceError.classList.remove("visible");
+}
+
+function showWorkspaceError(message) {
+  if (!workspaceError) return;
+  workspaceError.textContent = message;
+  workspaceError.classList.add("visible");
+}
+
+function setWorkspaceStatus(message, stateName = "loading") {
+  if (!workspaceStatus) return;
+  workspaceStatus.textContent = message;
+  workspaceStatus.classList.toggle("visible", Boolean(message));
+  workspaceStatus.classList.toggle("loading", stateName === "loading");
+  workspaceStatus.classList.toggle("ready", stateName === "ready");
+  workspaceStatus.classList.toggle("error", stateName === "error");
+}
+
 function firebaseErrorMessage(error, fallback) {
   const code = error?.code || "";
-  if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password") || code.includes("auth/user-not-found")) {
+  const message = String(error?.message || "");
+  if (
+    code.includes("auth/invalid-credential")
+    || code.includes("auth/wrong-password")
+    || code.includes("auth/user-not-found")
+    || message.includes("INVALID_LOGIN_CREDENTIALS")
+    || message.includes("EMAIL_NOT_FOUND")
+    || message.includes("INVALID_PASSWORD")
+  ) {
     return "No account matched that email and password.";
+  }
+  if (code.includes("auth/email-already-in-use") || message.includes("EMAIL_EXISTS")) {
+    return "An account with that email already exists. Use Log In or choose another email.";
+  }
+  if (code.includes("auth/weak-password") || message.includes("WEAK_PASSWORD")) {
+    return "Use a stronger password with at least 6 characters.";
+  }
+  if (code.includes("auth/invalid-email") || message.includes("INVALID_EMAIL")) {
+    return "Enter a valid email address.";
   }
   if (code.includes("auth/too-many-requests")) {
     return "Too many sign-in attempts. Wait a bit, then try again.";
   }
   if (code.includes("functions/permission-denied")) {
-    return "That team password did not match.";
+    return "That team access code did not match.";
   }
   if (code.includes("permission-denied")) {
     return "This account cannot open that team workspace.";
@@ -732,6 +811,131 @@ async function resolveFirebaseMembership(backend, firebaseUser, preferredTeamId)
   }
 
   return null;
+}
+
+function setCoachAuthMode(mode) {
+  coachAuthMode = mode === "create" ? "create" : "login";
+  const isCreating = coachAuthMode === "create";
+  coachSignupOnlyFields.forEach((field) => field.classList.toggle("hidden", !isCreating));
+  document.querySelector("#signupNameInput").required = isCreating;
+  document.querySelector("#loginPasswordInput").autocomplete = isCreating ? "new-password" : "current-password";
+  if (coachAuthHeading) {
+    coachAuthHeading.textContent = isCreating ? "Create coach account" : "Coach login";
+  }
+  if (coachAuthCopy) {
+    coachAuthCopy.textContent = isCreating
+      ? "Create your coach account first. You will create or choose a team on the next screen."
+      : "Sign in with your coach account. You will choose or create a team after authentication.";
+  }
+  if (coachAuthSubmit) {
+    coachAuthSubmit.textContent = isCreating ? "Create Coach Account" : "Log In";
+  }
+  if (coachAuthModeToggle) {
+    coachAuthModeToggle.textContent = isCreating ? "Use an existing coach account" : "Create a coach account";
+  }
+  updateFirebaseStatus();
+}
+
+function populateCoachTeamSelect(teams = []) {
+  if (!coachTeamSelect) return;
+  coachTeamSelect.replaceChildren();
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = teams.length ? "Select one of your teams" : "No teams found yet";
+  coachTeamSelect.append(placeholder);
+
+  teams.forEach((entry) => {
+    const team = entry.team || entry;
+    if (!team?.id) return;
+    registerTenant(team, pendingCoachSession?.user?.displayName || pendingCoachSession?.user?.email || "Head Coach");
+    const option = document.createElement("option");
+    option.value = team.id;
+    option.textContent = teamSearchLabel(tenantCatalog[team.id]);
+    option.dataset.role = entry.role || "headCoach";
+    coachTeamSelect.append(option);
+  });
+
+  coachTeamSelect.disabled = !teams.length;
+  openSelectedTeamButton.disabled = true;
+}
+
+async function loadCoachTeamsForWorkspace() {
+  if (!pendingCoachSession) return;
+  setWorkspaceStatus("Loading your teams...");
+
+  try {
+    const { backend, user } = pendingCoachSession;
+    let teams = [];
+    if (typeof backend?.listTeamsForCoach === "function") {
+      teams = await backend.listTeamsForCoach();
+    } else {
+      const idToken = await getFirebaseIdToken(user);
+      teams = await fetchCoachTeamsWithRest(idToken);
+    }
+
+    pendingCoachSession.teams = teams;
+    populateCoachTeamSelect(teams);
+    setWorkspaceStatus(teams.length ? "Choose a team or create a new one." : "Create your first team to continue.", "ready");
+  } catch (error) {
+    console.warn("Could not load coach teams", error);
+    pendingCoachSession.teams = [];
+    populateCoachTeamSelect([]);
+    setWorkspaceStatus("Create a team to continue.", "ready");
+  }
+}
+
+async function showCoachWorkspace(user, backend = null) {
+  pendingCoachSession = { user, backend, teams: [] };
+  clearAuthError();
+  clearWorkspaceError();
+  authCard.classList.add("hidden");
+  authCard.setAttribute("aria-hidden", "true");
+  coachWorkspaceScreen.classList.remove("hidden");
+  coachWorkspaceScreen.removeAttribute("aria-hidden");
+  await loadCoachTeamsForWorkspace();
+}
+
+function showAuthCard() {
+  pendingCoachSession = null;
+  coachWorkspaceScreen.classList.add("hidden");
+  coachWorkspaceScreen.setAttribute("aria-hidden", "true");
+  authCard.classList.remove("hidden");
+  authCard.removeAttribute("aria-hidden");
+  clearWorkspaceError();
+  setWorkspaceStatus("");
+}
+
+async function openCoachTeam(teamId) {
+  const team = tenantCatalog[teamId];
+  if (!pendingCoachSession || !team) {
+    showWorkspaceError("Select a team to open.");
+    return;
+  }
+
+  const { backend, user, teams = [] } = pendingCoachSession;
+  const listedTeam = teams.find((entry) => (entry.team?.id || entry.id) === teamId);
+  let role = listedTeam?.role || "headCoach";
+
+  if (backend?.getMembership) {
+    const membership = await backend.getMembership(teamId, user.uid);
+    if (!membership) {
+      throw new Error("That account is not connected to this team workspace yet.");
+    }
+    role = membership.role || role;
+  }
+
+  clearWorkspaceError();
+  setActiveTeam(teamId, { keepAuth: true });
+  unlockApp({
+    mode: "user",
+    uid: user.uid,
+    name: user.displayName || user.email,
+    email: user.email,
+    role,
+    teamId
+  });
+  pendingCoachSession = null;
 }
 
 function setAuthTab(tab) {
@@ -782,6 +986,7 @@ function requireHeadCoachAccess() {
 function lockApp() {
   state.session = null;
   localStorage.removeItem(sessionStorageKey);
+  showAuthCard();
   document.body.classList.add("auth-locked");
   appShell.setAttribute("aria-hidden", "true");
   authScreen.removeAttribute("aria-hidden");
@@ -796,6 +1001,8 @@ function unlockApp(session) {
   document.body.classList.remove("auth-locked");
   appShell.removeAttribute("aria-hidden");
   authScreen.setAttribute("aria-hidden", "true");
+  authCard.classList.add("hidden");
+  coachWorkspaceScreen.classList.add("hidden");
   setRole(session.role || "athlete");
   applyAuthPermissions();
 }
@@ -1242,6 +1449,42 @@ document.querySelectorAll("[data-auth-tab]").forEach((button) => {
   button.addEventListener("click", () => setAuthTab(button.dataset.authTab));
 });
 
+coachAuthModeToggle?.addEventListener("click", () => {
+  setCoachAuthMode(coachAuthMode === "login" ? "create" : "login");
+});
+
+coachWorkspaceBackButton?.addEventListener("click", async () => {
+  try {
+    await firebaseBackend()?.signOutCurrentUser();
+  } catch (error) {
+    console.warn("Firebase sign out failed", error);
+  }
+  showAuthCard();
+  setAuthTab("login");
+});
+
+openSelectedTeamButton?.addEventListener("click", async () => {
+  const teamId = coachTeamSelect?.value;
+  openSelectedTeamButton.disabled = true;
+  openSelectedTeamButton.dataset.originalText = openSelectedTeamButton.textContent;
+  openSelectedTeamButton.textContent = "Opening...";
+  clearWorkspaceError();
+
+  try {
+    await openCoachTeam(teamId);
+  } catch (error) {
+    showWorkspaceError(firebaseErrorMessage(error, "Could not open that team yet."));
+  } finally {
+    openSelectedTeamButton.textContent = openSelectedTeamButton.dataset.originalText || "Open Team";
+    delete openSelectedTeamButton.dataset.originalText;
+    openSelectedTeamButton.disabled = !coachTeamSelect?.value;
+  }
+});
+
+coachTeamSelect?.addEventListener("change", () => {
+  openSelectedTeamButton.disabled = !coachTeamSelect.value;
+});
+
 signupForm.addEventListener("input", saveSignupDraft);
 signupForm.addEventListener("change", saveSignupDraft);
 
@@ -1252,7 +1495,7 @@ readonlyForm.addEventListener("submit", async (event) => {
 
   try {
     if (!state.teamId) {
-      showAuthError("Select a team before using a team password.");
+      showAuthError("Select a team before using a team access code.");
       return;
     }
 
@@ -1272,7 +1515,7 @@ readonlyForm.addEventListener("submit", async (event) => {
 
     showAuthError("Account services are still starting. Try again in a moment.");
   } catch (error) {
-    showAuthError(firebaseErrorMessage(error, "That team password did not match."));
+    showAuthError(firebaseErrorMessage(error, "That team access code did not match."));
   } finally {
     setFormBusy(readonlyForm, false);
   }
@@ -1282,49 +1525,44 @@ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const email = document.querySelector("#loginEmailInput").value.trim().toLowerCase();
   const password = document.querySelector("#loginPasswordInput").value;
-  setFormBusy(loginForm, true, "Signing in...");
+  const name = document.querySelector("#signupNameInput").value.trim();
+  const isCreating = coachAuthMode === "create";
+  setFormBusy(loginForm, true, isCreating ? "Creating account..." : "Signing in...");
 
   try {
     const backend = await waitForFirebaseBackend((candidate) => (
-      typeof candidate?.signIn === "function"
-      && typeof candidate?.getMembership === "function"
-    ));
+      isCreating ? getFirebaseSignup(candidate) : typeof candidate?.signIn === "function"
+    ), 2500);
+    let firebaseUser;
 
     if (backend) {
-      const firebaseUser = await backend.signIn(email, password);
-      const access = await resolveFirebaseMembership(backend, firebaseUser, state.teamId);
-      if (!access) {
-        showAuthError("That account is not connected to this team workspace yet.");
-        return;
+      if (isCreating) {
+        const createAccount = getFirebaseSignup(backend);
+        firebaseUser = await createAccount({ email, password, name });
+      } else {
+        firebaseUser = await backend.signIn(email, password);
       }
-
-      loginForm.reset();
-      clearAuthError();
-      setActiveTeam(access.teamId, { keepAuth: true });
-      unlockApp({
-        mode: "user",
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || firebaseUser.email,
-        email: firebaseUser.email,
-        role: access.membership.role,
-        teamId: access.teamId
-      });
-      return;
+    } else if (isCreating) {
+      firebaseUser = await createAccountWithRest({ email, password, name });
+    } else {
+      firebaseUser = await signInWithRest({ email, password });
     }
 
-    showAuthError("Account services are still starting. Try again in a moment.");
+    loginForm.reset();
+    clearAuthError();
+    await showCoachWorkspace(firebaseUser, backend);
   } catch (error) {
     showAuthError(firebaseErrorMessage(error, "No account matched that email and password."));
   } finally {
     setFormBusy(loginForm, false);
+    if (pendingCoachSession) {
+      setCoachAuthMode("login");
+    }
   }
 });
 
 signupForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const name = document.querySelector("#signupNameInput").value.trim();
-  const email = document.querySelector("#signupEmailInput").value.trim().toLowerCase();
-  const password = document.querySelector("#signupPasswordInput").value;
   const teamName = document.querySelector("#signupTeamNameInput").value.trim();
   const sport = document.querySelector("#signupSportInput").value.trim();
   const logoText = document.querySelector("#signupLogoTextInput").value.trim();
@@ -1335,53 +1573,49 @@ signupForm.addEventListener("submit", async (event) => {
     surface: document.querySelector("#signupSurfaceInput").value
   };
   setFormBusy(signupForm, true, "Creating team...");
+  clearWorkspaceError();
 
   try {
+    if (!pendingCoachSession?.user) {
+      throw new Error("Sign in as a coach before creating a team.");
+    }
+
+    const { user, backend } = pendingCoachSession;
     const teamSetup = {
-      coachName: name,
-      coachEmail: email,
+      coachName: user.displayName || user.email || "Head Coach",
+      coachEmail: user.email || "",
       teamName,
       sport,
       logoText,
       accessCode,
       branding
     };
-    const backend = await waitForFirebaseBackend((candidate) => (
-      getFirebaseSignup(candidate)
-      && typeof candidate?.createTeamForCoach === "function"
-    ), 2500);
-    let firebaseUser;
     let setup;
 
-    if (backend) {
-      const createAccount = getFirebaseSignup(backend);
-      if (!createAccount) {
-        throw new Error("Account services are still starting. Try again in a moment.");
-      }
-
-      firebaseUser = await createAccount({ email, password, name });
+    if (typeof backend?.createTeamForCoach === "function") {
       setup = await backend.createTeamForCoach(teamSetup);
     } else {
-      firebaseUser = await createAccountWithRest({ email, password, name });
-      setup = await createTeamWithRest(firebaseUser.idToken, teamSetup);
+      const idToken = await getFirebaseIdToken(user);
+      setup = await createTeamWithRest(idToken, teamSetup);
     }
 
-    registerTenant(setup.team, name);
+    registerTenant(setup.team, user.displayName || user.email || "Head Coach");
     signupForm.reset();
     clearSignupDraft();
-    clearAuthError();
+    clearWorkspaceError();
     setActiveTeam(setup.teamId, { keepAuth: true });
     unlockApp({
       mode: "user",
-      uid: firebaseUser.uid,
-      name: firebaseUser.displayName || name,
-      email: firebaseUser.email || email,
+      uid: user.uid,
+      name: user.displayName || user.email,
+      email: user.email,
       role: "headCoach",
       teamId: setup.teamId
     });
+    pendingCoachSession = null;
     setView("coach");
   } catch (error) {
-    showAuthError(error.message || "Could not create that team yet. Please try again.");
+    showWorkspaceError(error.message || "Could not create that team yet. Please try again.");
   } finally {
     setFormBusy(signupForm, false);
   }
@@ -1394,7 +1628,7 @@ logoutButton.addEventListener("click", async () => {
     console.warn("Firebase sign out failed", error);
   }
   lockApp();
-  setAuthTab(Object.keys(tenantCatalog).length ? "readonly" : "signup");
+  setAuthTab("readonly");
 });
 
 channelList.addEventListener("click", (event) => {
@@ -1643,7 +1877,7 @@ if (window.firebaseBackendLoadError) {
 populateTeamSelect();
 setActiveTeam(state.teamId, { keepAuth: true });
 lockApp();
-setAuthTab("signup");
+setAuthTab("readonly");
 updateFirebaseStatus();
 loadFirebaseTeams();
 setView(location.hash?.replace("#", "") && pageTitles[location.hash.replace("#", "")] ? location.hash.replace("#", "") : "home");

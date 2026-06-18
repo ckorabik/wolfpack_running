@@ -18,6 +18,14 @@ const defaultFeatures = {
   coachStudio: true
 };
 
+const browserOrigins = new Set([
+  "https://dash-28cf9.web.app",
+  "https://dash-28cf9.firebaseapp.com",
+  "https://ckorabik.github.io",
+  "http://localhost:5000",
+  "http://127.0.0.1:5000"
+]);
+
 function cleanText(value, fallback = "") {
   return String(value || fallback).trim();
 }
@@ -41,6 +49,37 @@ function assertSignedIn(auth) {
   }
 }
 
+function applyCors(request, response) {
+  const origin = request.get("origin");
+  if (browserOrigins.has(origin)) {
+    response.set("Access-Control-Allow-Origin", origin);
+  }
+  response.set("Vary", "Origin");
+  response.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+}
+
+async function authFromBearerToken(request) {
+  const token = String(request.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!token) {
+    throw new HttpsError("unauthenticated", "You must be signed in.");
+  }
+  const decoded = await getAuth().verifyIdToken(token);
+  return { uid: decoded.uid, token: decoded };
+}
+
+function teamResponse(teamDoc) {
+  const team = teamDoc.data();
+  return {
+    id: teamDoc.id,
+    name: cleanText(team.name, teamDoc.id),
+    sport: cleanText(team.sport, "Track and Field"),
+    logoText: cleanText(team.logoText, team.name?.slice(0, 4) || "TEAM").slice(0, 12).toUpperCase(),
+    features: team.features || defaultFeatures,
+    branding: team.branding || {}
+  };
+}
+
 async function getRole(teamId, uid) {
   const snapshot = await db.doc(`teams/${teamId}/memberships/${uid}`).get();
   return snapshot.exists ? snapshot.data().role : null;
@@ -56,17 +95,45 @@ async function assertHeadCoach(teamId, uid) {
 export const listTeamsForSignIn = onCall(async () => {
   const snapshot = await db.collection("teams").orderBy("name").limit(100).get();
   return {
-    teams: snapshot.docs.map((teamDoc) => {
-      const team = teamDoc.data();
-      return {
-        id: teamDoc.id,
-        name: cleanText(team.name, teamDoc.id),
-        sport: cleanText(team.sport, "Track and Field"),
-        logoText: cleanText(team.logoText, team.name?.slice(0, 4) || "TEAM").slice(0, 12).toUpperCase()
-      };
-    })
+    teams: snapshot.docs.map(teamResponse)
   };
 });
+
+async function listTeamsForCoachSetup(auth) {
+  assertSignedIn(auth);
+  const refs = new Map();
+
+  const ownedSnapshot = await db.collection("teams").where("ownerUid", "==", auth.uid).get();
+  ownedSnapshot.docs.forEach((teamDoc) => refs.set(teamDoc.id, teamDoc.ref));
+
+  const profileSnapshot = await db.doc(`users/${auth.uid}`).get();
+  const profileTeamIds = profileSnapshot.exists && Array.isArray(profileSnapshot.data().teamIds)
+    ? profileSnapshot.data().teamIds
+    : [];
+  profileTeamIds.forEach((teamId) => {
+    if (teamId) {
+      refs.set(teamId, db.doc(`teams/${teamId}`));
+    }
+  });
+
+  if (!refs.size) {
+    return { teams: [] };
+  }
+
+  const teamSnapshots = await db.getAll(...refs.values());
+  const teams = [];
+  for (const teamDoc of teamSnapshots) {
+    if (!teamDoc.exists) continue;
+    const membership = await db.doc(`teams/${teamDoc.id}/memberships/${auth.uid}`).get();
+    teams.push({
+      role: membership.exists ? cleanText(membership.data().role, "coach") : "headCoach",
+      team: teamResponse(teamDoc)
+    });
+  }
+
+  teams.sort((a, b) => a.team.name.localeCompare(b.team.name));
+  return { teams };
+}
 
 async function createTeamForCoachSetup(auth, data = {}) {
   assertSignedIn(auth);
@@ -183,6 +250,7 @@ async function createTeamForCoachSetup(auth, data = {}) {
 
   batch.set(db.doc(`users/${auth.uid}`), {
     name: coachName,
+    displayName: coachName,
     email: coachEmail,
     defaultTeamId: teamId,
     teamIds: FieldValue.arrayUnion(teamId),
@@ -210,20 +278,12 @@ export const createTeamForCoach = onCall(async (request) => {
   return createTeamForCoachSetup(request.auth, request.data || {});
 });
 
-export const createTeamForCoachHttp = onRequest(async (request, response) => {
-  const allowedOrigins = new Set([
-    "https://dash-28cf9.web.app",
-    "https://dash-28cf9.firebaseapp.com",
-    "http://localhost:5000",
-    "http://127.0.0.1:5000"
-  ]);
-  const origin = request.get("origin");
-  if (allowedOrigins.has(origin)) {
-    response.set("Access-Control-Allow-Origin", origin);
-  }
-  response.set("Vary", "Origin");
-  response.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  response.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+export const listTeamsForCoach = onCall(async (request) => {
+  return listTeamsForCoachSetup(request.auth);
+});
+
+export const listTeamsForCoachHttp = onRequest(async (request, response) => {
+  applyCors(request, response);
 
   if (request.method === "OPTIONS") {
     response.status(204).send("");
@@ -236,12 +296,36 @@ export const createTeamForCoachHttp = onRequest(async (request, response) => {
   }
 
   try {
-    const token = String(request.get("authorization") || "").replace(/^Bearer\s+/i, "");
-    if (!token) {
-      throw new HttpsError("unauthenticated", "You must be signed in.");
-    }
-    const decoded = await getAuth().verifyIdToken(token);
-    const result = await createTeamForCoachSetup({ uid: decoded.uid, token: decoded }, request.body?.data || {});
+    const auth = await authFromBearerToken(request);
+    const result = await listTeamsForCoachSetup(auth);
+    response.json({ result });
+  } catch (error) {
+    const status = error instanceof HttpsError ? error.httpErrorCode?.status || 500 : 500;
+    response.status(status).json({
+      error: {
+        status: error.code || "internal",
+        message: error.message || "Could not load your teams."
+      }
+    });
+  }
+});
+
+export const createTeamForCoachHttp = onRequest(async (request, response) => {
+  applyCors(request, response);
+
+  if (request.method === "OPTIONS") {
+    response.status(204).send("");
+    return;
+  }
+
+  if (request.method !== "POST") {
+    response.status(405).json({ error: { message: "Method not allowed." } });
+    return;
+  }
+
+  try {
+    const auth = await authFromBearerToken(request);
+    const result = await createTeamForCoachSetup(auth, request.body?.data || {});
     response.json({ result });
   } catch (error) {
     const status = error instanceof HttpsError ? error.httpErrorCode?.status || 500 : 500;

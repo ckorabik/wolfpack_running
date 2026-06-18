@@ -18,9 +18,8 @@
         </div>
 
         <div class="auth-tabs" role="tablist" aria-label="Authentication options">
-          <button class="auth-tab" type="button" data-auth-tab="readonly">Team Password</button>
-          <button class="auth-tab" type="button" data-auth-tab="login">Log In</button>
-          <button class="auth-tab active" type="button" data-auth-tab="signup">Set Up Team</button>
+          <button class="auth-tab active" type="button" data-auth-tab="readonly">Team Access</button>
+          <button class="auth-tab" type="button" data-auth-tab="login">Coach Login</button>
         </div>
 
         <p class="auth-error" id="authError" role="alert"></p>
@@ -36,13 +35,21 @@
             <p class="team-picker-status" id="teamPickerStatus" role="status"></p>
           </div>
           <label>
-            Team password
+            Team access code
             <input id="teamPasswordInput" type="password" autocomplete="current-password" required>
           </label>
-          <button class="primary-button" type="submit">View Read Only Dashboard</button>
+          <button class="primary-button" type="submit">Open Team Dashboard</button>
         </form>
 
         <form class="auth-form" id="loginForm" data-auth-panel="login">
+          <div class="auth-copy">
+            <strong id="coachAuthHeading">Coach login</strong>
+            <span id="coachAuthCopy">Sign in with your coach account. You will choose or create a team after authentication.</span>
+          </div>
+          <label class="coach-signup-only hidden">
+            Your name
+            <input id="signupNameInput" type="text" autocomplete="name" maxlength="48">
+          </label>
           <label>
             Email
             <input id="loginEmailInput" type="email" autocomplete="email" required>
@@ -51,26 +58,43 @@
             Password
             <input id="loginPasswordInput" type="password" autocomplete="current-password" required>
           </label>
-          <button class="primary-button" type="submit">Log In</button>
+          <button class="primary-button" id="coachAuthSubmit" type="submit">Log In</button>
+          <button class="text-button" id="coachAuthModeToggle" type="button">Create a coach account</button>
         </form>
+      </div>
 
-        <form class="auth-form active" id="signupForm" data-auth-panel="signup">
+      <div class="auth-card coach-workspace-card hidden" id="coachWorkspaceScreen" aria-hidden="true">
+        <div class="auth-brand">
+          <span class="team-logo" data-logo-mark>DASH</span>
+          <div>
+            <p class="eyebrow">Coach workspace</p>
+            <h1>Choose Team</h1>
+          </div>
+        </div>
+
+        <p class="auth-error" id="workspaceError" role="alert"></p>
+        <p class="auth-status" id="workspaceStatus" role="status"></p>
+
+        <section class="workspace-section">
           <div class="auth-copy">
-            <strong>New coach setup</strong>
-            <span>Create your coach account, name your team workspace, and choose the first access code families can use for read-only viewing.</span>
+            <strong>Your teams</strong>
+            <span>Select an existing team connected to your coach account.</span>
           </div>
           <label>
-            Your name
-            <input id="signupNameInput" type="text" autocomplete="name" required maxlength="48">
+            Team
+            <select id="coachTeamSelect"></select>
           </label>
-          <label>
-            Email
-            <input id="signupEmailInput" type="email" autocomplete="email" required>
-          </label>
-          <label>
-            Password
-            <input id="signupPasswordInput" type="password" autocomplete="new-password" required minlength="6">
-          </label>
+          <div class="button-row">
+            <button class="primary-button" id="openSelectedTeamButton" type="button">Open Team</button>
+            <button class="secondary-button" id="coachWorkspaceBackButton" type="button">Back</button>
+          </div>
+        </section>
+
+        <form class="workspace-section auth-form active" id="signupForm">
+          <div class="auth-copy">
+            <strong>Create a team</strong>
+            <span>Name your team workspace and choose the first access code families can use for read-only viewing.</span>
+          </div>
           <div class="onboarding-grid">
             <label>
               Team name
@@ -85,7 +109,7 @@
               <input id="signupLogoTextInput" type="text" placeholder="WOLVES" required maxlength="12">
             </label>
             <label>
-              Read-only team code
+              Team access code
               <input id="signupAccessCodeInput" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
             </label>
           </div>
@@ -103,7 +127,7 @@
               <input id="signupSurfaceInput" type="color" value="#f7f4ee">
             </label>
           </div>
-          <button class="primary-button" type="submit">Create Coach Account and Team</button>
+          <button class="primary-button" type="submit">Create Team</button>
         </form>
       </div>
     </section>
@@ -554,12 +578,12 @@
     </script>
     <script type="module">
       try {
-        await import("./src/firebase/browserBridge.js?v=20260617i");
+        await import("./src/firebase/browserBridge.js?v=20260618a");
       } catch (error) {
         window.firebaseBackendLoadError = error;
         window.dispatchEvent(new CustomEvent("firebase-backend-failed", { detail: { error } }));
       }
     </script>
-    <script src="app.js?v=20260617i"></script>
+    <script src="app.js?v=20260618a"></script>
   </body>
 </html>

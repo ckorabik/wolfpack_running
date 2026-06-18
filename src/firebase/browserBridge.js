@@ -10,6 +10,7 @@ import {
 import {
   createTeamForCoach,
   joinTeamWithReadOnlyCode,
+  listTeamsForCoach,
   listTeamsForSignIn,
   setReadOnlyCode,
   setTeamMemberRole
@@ -20,6 +21,7 @@ globalThis.firebaseBackend = Object.assign(globalThis.firebaseBackend || {}, {
   createTeamForCoach,
   getMembership,
   getTeam,
+  listTeamsForCoach,
   listTeams: listTeamsForSignIn,
   joinTeamWithReadOnlyCode,
   observeAuth,
@@ -32,7 +34,7 @@ globalThis.firebaseBackend = Object.assign(globalThis.firebaseBackend || {}, {
   Signup: signUp,
   signup: signUp,
   signUp,
-  version: "20260617e"
+  version: "20260618a"
 });
 
 globalThis.dispatchEvent(new CustomEvent("firebase-backend-ready"));
